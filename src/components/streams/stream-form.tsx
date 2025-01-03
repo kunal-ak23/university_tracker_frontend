@@ -20,7 +20,7 @@ const streamFormSchema = z.object({
     .min(1, "Duration is required")
     .transform(val => parseInt(val))
     .refine(val => val > 0, "Duration must be greater than 0"),
-  duration_unit: z.enum(["months", "years", "semesters"]),
+  duration_unit: z.enum(["Days", "Months", "Years"]),
   description: z.string().min(1, "Description is required"),
 })
 
@@ -33,9 +33,9 @@ interface StreamFormProps {
 }
 
 const durationUnits = [
-  { label: "Months", value: "months" },
-  { label: "Years", value: "years" },
-  { label: "Semesters", value: "semesters" },
+  { label: "Days", value: "Days" },
+  { label: "Months", value: "Months" },
+  { label: "Years", value: "Years" },
 ]
 
 export function StreamForm({ mode = 'create', stream, universityId }: StreamFormProps) {
@@ -49,7 +49,7 @@ export function StreamForm({ mode = 'create', stream, universityId }: StreamForm
       // @ts-ignore
       duration: stream?.duration?.toString() ?? "",
       // @ts-ignore
-      duration_unit: stream?.duration_unit ?? "years",
+      duration_unit: stream?.duration_unit ?? "Years",
       description: stream?.description ?? "",
     },
   })

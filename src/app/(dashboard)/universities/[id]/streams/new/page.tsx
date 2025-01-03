@@ -1,5 +1,3 @@
-"use client"
-
 import { StreamForm } from "@/components/streams/stream-form"
 
 

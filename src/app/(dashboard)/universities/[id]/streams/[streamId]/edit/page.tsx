@@ -1,8 +1,5 @@
-"use client"
-
 import { StreamForm } from "@/components/streams/stream-form"
-import { getStream, getStreamsByUniversity } from "@/service/api/streams"
-import { notFound } from "next/navigation"
+import { getStream } from "@/service/api/streams"
 
 
 export default async function EditStreamPage({params}: {params: Promise<{
@@ -12,8 +9,6 @@ export default async function EditStreamPage({params}: {params: Promise<{
   const {id, streamId} = await params;
 
   const stream = await getStream(Number(streamId));
-
-  
 
   return (
     <div className="space-y-6">
