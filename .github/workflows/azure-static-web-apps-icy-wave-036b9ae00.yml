@@ -19,14 +19,6 @@ jobs:
         with:
           submodules: true
           lfs: false
-      
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-          
-      - name: Install Dependencies
-        run: npm install --legacy-peer-deps
           
       - name: Build And Deploy
         id: builddeploy
