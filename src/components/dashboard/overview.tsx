@@ -15,7 +15,6 @@ export function Overview() {
         setIsLoading(true)
         setError(null)
         const response = await getRevenueOverview(new Date().getFullYear())
-        console.log(response);
         setData(response.data)
       } catch (error) {
         console.error('Failed to load revenue overview:', error)

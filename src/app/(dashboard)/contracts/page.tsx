@@ -15,6 +15,8 @@ export default function ContractsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [hasNextPage, setHasNextPage] = useState(false)
+  const [hasPreviousPage, setHasPreviousPage] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [sortColumn, setSortColumn] = useState<string>()
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>()
@@ -34,6 +36,8 @@ export default function ContractsPage() {
       })
       setContracts(response.results)
       setTotalPages(Math.ceil(response.count / 25))
+      setHasNextPage(!!response.next)
+      setHasPreviousPage(!!response.previous)
     } catch (error) {
       console.error('Failed to fetch contracts:', error)
       toast({
@@ -84,9 +88,11 @@ export default function ContractsPage() {
         </Link>
       </div>
       <ContractsTable 
-        contracts={contracts}
+        contractsData={contracts}
         currentPage={currentPage}
         totalPages={totalPages}
+        hasNextPage={hasNextPage}
+        hasPreviousPage={hasPreviousPage}
         onPageChange={handlePageChange}
         onSearch={handleSearch}
         onSort={handleSort}

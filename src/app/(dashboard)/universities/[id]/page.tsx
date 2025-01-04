@@ -127,12 +127,6 @@ export default async function UniversityPage({
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">{university.name}</h2>
         <div className="flex gap-4">
-          <Link href={`/universities/${id}/streams`}>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Manage Streams
-            </Button>
-          </Link>
           <UniversityActions universityId={id} />
         </div>
       </div>

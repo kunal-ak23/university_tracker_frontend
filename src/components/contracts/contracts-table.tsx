@@ -13,7 +13,7 @@ import { formatDate } from "@/service/utils"
 import { ColumnDef, Row } from "@tanstack/react-table"
 
 interface ContractsTableProps {
-  contracts: Contract[]
+  contractsData: Contract[]
   currentPage: number
   totalPages: number
   onPageChange: (page: number) => void
@@ -26,16 +26,16 @@ interface ContractsTableProps {
 }
 
 export function ContractsTable({ 
-  contracts,
+  contractsData,
   currentPage,
+  hasNextPage,
+  hasPreviousPage,
   totalPages,
   onPageChange,
   onSearch,
   onSort,
   sortColumn,
   sortDirection,
-  hasNextPage,
-  hasPreviousPage,
 }: ContractsTableProps) {
   const router = useRouter()
   const { toast } = useToast()
@@ -140,7 +140,7 @@ export function ContractsTable({
         <div className="space-y-1 text-sm">
           <div>Cost/Student: ₹{row.original.cost_per_student}</div>
           <div>Transfer Price: ₹{row.original.oem_transfer_price}</div>
-          <div>Tax Rate: {row.original.tax_rate}%</div>
+          <div>Tax Rate: {row.original.tax_rate.rate}%</div>
         </div>
       ),
     },
@@ -214,7 +214,7 @@ export function ContractsTable({
 
   return (
     <DataTable<Contract, any>
-      data={contracts}
+      data={contractsData}
       columns={columns}
       pageCount={totalPages}
       searchPlaceholder="Search contracts..."

@@ -37,8 +37,8 @@ export async function createContract(formData: FormData): Promise<Contract> {
   })
 }
 
-export async function deleteContractFile(contractId: string, fileId: string): Promise<void> {
-  return apiFetch(`/contracts/${contractId}/files/${fileId}/`, {
+export async function deleteContractFile(fileId: string): Promise<void> {
+  return apiFetch(`/contract-files/${fileId}/`, {
     method: 'DELETE',
   })
 }

@@ -23,7 +23,6 @@ export default function DashboardPage() {
         setIsLoading(true)
         setError(null)
         const data = await getDashboardSummary()
-        console.log(data);
         setSummary(data)
       } catch (error) {
         console.error('Failed to load dashboard summary:', error)

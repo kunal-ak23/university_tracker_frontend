@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import { FileUpload } from "@/components/ui/file-upload"
 import { useState, useEffect } from "react"
-import { createContract, updateContract, deleteContract, archiveContract } from "@/service/api/contracts"
+import { createContract, updateContract, deleteContract, archiveContract, deleteContractFile } from "@/service/api/contracts"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { MultiSelect } from "@/components/ui/multi-select"
 import { getUniversities, getUniversityStreams } from "@/service/api/universities"
@@ -64,15 +64,6 @@ export function ContractForm({ mode = 'create', contract }: ContractFormProps) {
   const [taxRates, setTaxRates] = useState<TaxRate[]>([])
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
-  // Add console.log to debug the contract data
-  useEffect(() => {
-    if (mode === 'edit' && contract) {
-      console.log('Contract Data:', contract)
-      console.log('University ID:', contract.university?.id)
-      console.log('OEM ID:', contract.oem?.id)
-    }
-  }, [mode, contract])
-
   const form = useForm<ContractFormValues>({
     resolver: zodResolver(contractFormSchema),
     mode: "all",
@@ -83,8 +74,8 @@ export function ContractForm({ mode = 'create', contract }: ContractFormProps) {
       oem: contract?.oem?.id?.toString() ?? "",
       cost_per_student: contract?.cost_per_student?.toString() ?? "",
       oem_transfer_price: contract?.oem_transfer_price?.toString() ?? "",
-      tax_rate: contract?.tax_rate?.toString() ?? "",
-      status: contract?.status as "active" | "planned" | "inactive" | "archived" | undefined ?? "planned",
+      tax_rate: contract?.tax_rate?.id.toString() ?? "",
+      status: contract?.status as "planned" | "active" | "inactive" | "archived" | undefined ?? "planned",
       start_date: contract?.start_date ?? "",
       end_date: contract?.end_date ?? "",
       programs: contract?.programs?.map(cp => cp.id.toString()) ?? [],
@@ -647,9 +638,12 @@ export function ContractForm({ mode = 'create', contract }: ContractFormProps) {
             existingFiles={mode === 'edit' ? contract?.contract_files || [] : []}
             onFileRemove={mode === 'edit' ? async (fileId) => {
               try {
-                await fetch(`/api/contracts/${contract?.id}/files/${fileId}`, {
-                  method: 'DELETE',
-                })
+                await deleteContractFile(fileId.toString())
+                  
+                // Update the local state to remove the deleted file
+                const updatedFiles = contract?.contract_files.filter(f => f.id !== fileId) || []
+                contract!.contract_files = updatedFiles
+                
                 toast({
                   title: "Success",
                   description: "File deleted successfully",

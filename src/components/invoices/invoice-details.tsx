@@ -150,7 +150,7 @@ export function InvoiceDetails({ invoice }: InvoiceDetailsProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => window.open(`${process.env.NEXT_PUBLIC_API_URL}/invoices/${invoice.id}/proforma/`, '_blank')}
+                  onClick={() => window.open(invoice.proforma_invoice, '_blank')}
                 >
                   <FileText className="mr-2 h-4 w-4" />
                   View Proforma Invoice
@@ -160,7 +160,7 @@ export function InvoiceDetails({ invoice }: InvoiceDetailsProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => window.open(`${process.env.NEXT_PUBLIC_API_URL}/invoices/${invoice.id}/actual/`, '_blank')}
+                  onClick={() => window.open(invoice.actual_invoice, '_blank')}
                 >
                   <FileText className="mr-2 h-4 w-4" />
                   View Actual Invoice

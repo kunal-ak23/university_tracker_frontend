@@ -1,5 +1,6 @@
 import {z} from "zod";
 import { Program } from "./program";
+import { TaxRate } from "@/types";
 export interface ContractProgram {
   id: number
   program: Program
@@ -49,9 +50,9 @@ export interface Contract {
   oem_transfer_price: string
   start_date: string | null
   end_date: string | null
-  status: string 
+  status: string | "planned" | "active" | "inactive" | "archived"
   notes: string | null
-  tax_rate: number
+  tax_rate: TaxRate
   contract_programs: ContractProgram[]
   contract_files: ContractFile[]
   streams: Stream[]
@@ -67,8 +68,12 @@ export const contractFormSchema = z.object({
   start_date: z.string().min(1, "Start date is required"),
   end_date: z.string().min(1, "End date is required"),
   notes: z.string().optional(),
-  status: z.enum(["active", "pending", "expired"]),
-  tax_rate: z.number(),
+  status: z.enum(["planned", "active", "completed", "cancelled"], {
+    required_error: "Please select a status",
+  }),
+  tax_rate: z.number({
+    required_error: "Please select a tax rate",
+  }),
   oem_id: z.number(),
   university_id: z.number(),
   streams_ids: z.array(z.number()).refine(

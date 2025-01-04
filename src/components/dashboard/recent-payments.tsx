@@ -18,7 +18,6 @@ export function RecentPayments() {
         setError(null)
         const response = await getRecentPayments()
         setPayments(response.results)
-        console.log(response.results);
       } catch (error) {
         console.error('Failed to load recent payments:', error)
         setError('Failed to load recent payments')
