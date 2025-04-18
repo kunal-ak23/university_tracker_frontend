@@ -22,34 +22,7 @@ interface ChannelPartnersTableProps {
 }
 
 export function ChannelPartnersTable({ channelPartners }: ChannelPartnersTableProps) {
-  const router = useRouter()
-  const { toast } = useToast()
-  const [programs, setPrograms] = useState<Record<string, ChannelPartnerProgram[]>>({})
-
-  useEffect(() => {
-    async function fetchPrograms() {
-      try {
-        const data = await getChannelPartnerPrograms()
-        const programsByPartner = data.results.reduce((acc, program) => {
-          if (!acc[program.channel_partner]) {
-            acc[program.channel_partner] = []
-          }
-          acc[program.channel_partner].push(program)
-          return acc
-        }, {} as Record<string, ChannelPartnerProgram[]>)
-        setPrograms(programsByPartner)
-      } catch (error) {
-        console.error("Failed to fetch programs:", error)
-        toast({
-          title: "Error",
-          description: "Failed to load partner programs",
-          variant: "destructive",
-        })
-      }
-    }
-
-    fetchPrograms()
-  }, [toast])
+  const router = useRouter();
 
   return (
     <div className="rounded-md border">
@@ -60,7 +33,6 @@ export function ChannelPartnersTable({ channelPartners }: ChannelPartnersTablePr
             <TableHead>Website</TableHead>
             <TableHead>Contact Email</TableHead>
             <TableHead>Commission Rate</TableHead>
-            <TableHead>Programs</TableHead>
             <TableHead>Status</TableHead>
           </TableRow>
         </TableHeader>
@@ -85,19 +57,6 @@ export function ChannelPartnersTable({ channelPartners }: ChannelPartnersTablePr
               </TableCell>
               <TableCell>{partner.contact_email}</TableCell>
               <TableCell>{formatCurrency(partner.commission_rate)}%</TableCell>
-              <TableCell>
-                <div className="flex flex-wrap gap-1">
-                  {programs[partner.id]?.map((program) => (
-                    <Badge 
-                      key={program.id}
-                      variant={program.status === 'active' ? 'default' : 'secondary'}
-                      className="cursor-default"
-                    >
-                      {program.program}
-                    </Badge>
-                  ))}
-                </div>
-              </TableCell>
               <TableCell>
                 <Badge variant={partner.status === 'active' ? 'default' : 'secondary'}>
                   {partner.status}

@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { ChannelPartnerProgramForm } from "./channel-partner-program-form"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Pencil, Trash2 } from "lucide-react"
+import {Program} from "@/types/program";
 
 interface ChannelPartnerProgramsProps {
   channelPartnerId: string
@@ -91,7 +92,7 @@ export function ChannelPartnerPrograms({ channelPartnerId }: ChannelPartnerProgr
             <ChannelPartnerProgramForm
               mode={selectedProgram ? "edit" : "create"}
               channelPartnerId={channelPartnerId}
-              program={selectedProgram}
+              program={selectedProgram || undefined}
             />
           </DialogContent>
         </Dialog>
@@ -115,10 +116,10 @@ export function ChannelPartnerPrograms({ channelPartnerId }: ChannelPartnerProgr
           <TableBody>
             {programs.map((program) => (
               <TableRow key={program.id}>
-                <TableCell>{program.program.name}</TableCell>
+                <TableCell>{(program?.program as Program).name}</TableCell>
                 <TableCell>{program.transfer_price}</TableCell>
                 <TableCell>{program.commission_rate}%</TableCell>
-                <TableCell>{program?.program.provider?.name}</TableCell>
+                <TableCell>{(program?.program as Program).provider?.name}</TableCell>
 
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">

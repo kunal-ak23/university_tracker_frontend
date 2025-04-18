@@ -5,7 +5,7 @@ export interface ChannelPartner {
   contact_email: string;
   contact_phone: string;
   address: string;
-  poc: number;
+  poc: string;
   commission_rate: number;
   status: 'active' | 'inactive';
   notes?: string;

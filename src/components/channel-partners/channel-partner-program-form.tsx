@@ -69,9 +69,9 @@ export function ChannelPartnerProgramForm({
     reValidateMode: "onChange",
     defaultValues: {
       channel_partner_id: channelPartnerId,
-      program_id: program?.program ?? "",
-      transfer_price: program?.transfer_price?.toString() ?? "0",
-      commission_rate: program?.commission_rate?.toString() ?? "0",
+      program_id: (program?.program as Program).id.toString() ?? "",
+      transfer_price: program?.transfer_price ?? 0,
+      commission_rate: program?.commission_rate ?? 0,
       status: program?.status ?? "active",
     },
   })
@@ -166,7 +166,7 @@ export function ChannelPartnerProgramForm({
                   {availablePrograms.map((program) => (
                     <SelectItem 
                       key={program.id} 
-                      value={program.id}
+                      value={program.id.toString()}
                     >
                       {program.name}
                     </SelectItem>

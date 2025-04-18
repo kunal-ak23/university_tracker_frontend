@@ -29,12 +29,13 @@ export interface User {
   updated_at: string
 }
 
-export type POCRole = 'university' | 'provider'
+export type POCRole = 'university' | 'provider' | 'channel_partner';
 
 export async function getEligiblePOCs(role: POCRole): Promise<PaginatedResponse<User>> {
   const roleMapping = {
     university: 'university_poc',
-    provider: 'provider_poc'
+    provider: 'provider_poc',
+    channel_partner: 'channel_partner_poc'
   }
   
   return apiFetch(`/users/?roles=${roleMapping[role]},superuser`)
