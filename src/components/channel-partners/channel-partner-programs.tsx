@@ -35,7 +35,6 @@ export function ChannelPartnerPrograms({ channelPartnerId }: ChannelPartnerProgr
         is_active: true
       })
       setPrograms(data.results);
-      console.log(data.results);
     } catch (error) {
       console.error("Failed to fetch programs:", error)
       toast({

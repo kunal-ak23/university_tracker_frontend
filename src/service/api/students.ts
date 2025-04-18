@@ -23,7 +23,6 @@ export async function getStudent(id: string) {
 }
 
 export async function createStudent(data: Partial<Student>) {
-  console.log(data);
   return apiFetch(`/students/`, {
     method: 'POST',
     body: JSON.stringify(data),

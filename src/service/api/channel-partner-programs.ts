@@ -20,7 +20,6 @@ export async function getChannelPartnerPrograms(params?: GetChannelPartnerProgra
   const queryString = queryParams.toString()
   const url = queryString ? `/channel-partner-programs/?${queryString}` : '/channel-partner-programs/'
   
-  console.log("Fetching channel partner programs", url)
   return apiFetch(url, {
     method: 'GET',
   })
