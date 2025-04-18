@@ -17,6 +17,7 @@ export async function apiFetch(
 
   const baseURL = process.env.NEXT_PUBLIC_API_URL
   const url = `${baseURL}${endpoint}`
+  console.log(url);
 
   let response
   try {

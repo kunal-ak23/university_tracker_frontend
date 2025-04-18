@@ -11,6 +11,8 @@ import {
   Building,
   School,
   Wallet,
+  User,
+  Handshake,
 } from "lucide-react"
 
 export const sidebarConfig = [
@@ -18,6 +20,28 @@ export const sidebarConfig = [
     title: "Dashboard",
     href: "/dashboard",
     icon: LayoutDashboard,
+  },
+  {
+    title: "Student Management",
+    icon: User,
+    items: [
+      {
+        title: "Students",
+        href: "/students",
+        icon: Users,
+      },
+    ],
+  },
+  {
+    title: "Channel Partners",
+    icon: Handshake,
+    items: [
+      {
+        title: "Partners",
+        href: "/channel-partners",
+        icon: Handshake,
+      },
+    ],
   },
   {
     title: "OEM Management",
