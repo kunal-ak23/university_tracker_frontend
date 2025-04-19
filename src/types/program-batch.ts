@@ -1,6 +1,6 @@
 import { Program } from "./program"
 
-export type ProgramBatchStatus = "planned" | "active" | "completed" | "cancelled"
+export type ProgramBatchStatus = "planned" | "ongoing" | "completed"
 
 export interface ProgramBatch {
   id: number
