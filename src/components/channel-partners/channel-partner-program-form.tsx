@@ -69,7 +69,7 @@ export function ChannelPartnerProgramForm({
     reValidateMode: "onChange",
     defaultValues: {
       channel_partner_id: channelPartnerId,
-      program_id: (program?.program as Program).id.toString() ?? "",
+      program_id: (program?.program as Program)?.id.toString() ?? "",
       transfer_price: program?.transfer_price ?? 0,
       commission_rate: program?.commission_rate ?? 0,
       status: program?.status ?? "active",

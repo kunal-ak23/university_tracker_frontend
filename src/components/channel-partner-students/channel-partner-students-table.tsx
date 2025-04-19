@@ -1,6 +1,6 @@
 "use client"
 
-import { ProgramBatch } from "@/types/program-batch"
+import { ChannelPartnerStudent } from "@/types/channel-partner-student"
 import {
   Table,
   TableBody,
@@ -15,33 +15,33 @@ import { useRouter } from "next/navigation"
 import { format } from "date-fns"
 import { Button } from "@/components/ui/button"
 import { Edit, Trash2 } from "lucide-react"
-import { deleteProgramBatch } from "@/service/api/program-batches"
+import { deleteChannelPartnerStudent } from "@/service/api/channel-partner-students"
 import { useToast } from "@/hooks/use-toast"
 
-interface ProgramBatchesTableProps {
-  programBatches: ProgramBatch[]
+interface ChannelPartnerStudentsTableProps {
+  students: ChannelPartnerStudent[]
   onDelete?: (id: number) => void
 }
 
-export function ProgramBatchesTable({ programBatches, onDelete }: ProgramBatchesTableProps) {
+export function ChannelPartnerStudentsTable({ students, onDelete }: ChannelPartnerStudentsTableProps) {
   const router = useRouter()
   const { toast } = useToast()
 
-  console.log(programBatches);
+  console.log(students);
 
   const handleDelete = async (id: number) => {
     try {
-      await deleteProgramBatch(id)
+      await deleteChannelPartnerStudent(id)
       toast({
         title: "Success",
-        description: "Program batch deleted successfully",
+        description: "Student enrollment deleted successfully",
       })
       onDelete?.(id)
     } catch (error) {
-      console.error("Failed to delete program batch:", error)
+      console.error("Failed to delete student enrollment:", error)
       toast({
         title: "Error",
-        description: "Failed to delete program batch",
+        description: "Failed to delete student enrollment",
         variant: "destructive",
       })
     }
@@ -49,14 +49,12 @@ export function ProgramBatchesTable({ programBatches, onDelete }: ProgramBatches
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "planned":
-        return <Badge variant="outline">Planned</Badge>
-      case "active":
-        return <Badge variant="default">Active</Badge>
+      case "enrolled":
+        return <Badge variant="default">Enrolled</Badge>
       case "completed":
         return <Badge variant="secondary">Completed</Badge>
-      case "cancelled":
-        return <Badge variant="destructive">Cancelled</Badge>
+      case "dropped":
+        return <Badge variant="destructive">Dropped</Badge>
       default:
         return <Badge variant="outline">{status}</Badge>
     }
@@ -66,41 +64,37 @@ export function ProgramBatchesTable({ programBatches, onDelete }: ProgramBatches
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Name</TableHead>
-          <TableHead>Program</TableHead>
-          <TableHead>Start Date</TableHead>
-          <TableHead>End Date</TableHead>
-          <TableHead>Students</TableHead>
-          <TableHead>Cost/Student</TableHead>
+          <TableHead>Student</TableHead>
+          <TableHead>Program Batch</TableHead>
+          <TableHead>Channel Partner</TableHead>
+          <TableHead>Transfer Price</TableHead>
+          <TableHead>Commission Rate</TableHead>
           <TableHead>Status</TableHead>
           <TableHead className="text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {programBatches?.map((batch) => (
-          <TableRow key={batch.id}>
-            <TableCell className="font-medium">{batch.name}</TableCell>
-            <TableCell>{batch.program_details.name}</TableCell>
-            <TableCell>{format(new Date(batch.start_date), "MMM d, yyyy")}</TableCell>
-            <TableCell>{format(new Date(batch.end_date), "MMM d, yyyy")}</TableCell>
-            <TableCell>{batch.number_of_students}</TableCell>
-            <TableCell>
-              {batch.cost_per_student ? formatCurrency(batch.cost_per_student) : "-"}
-            </TableCell>
-            <TableCell>{getStatusBadge(batch.status)}</TableCell>
+        {students.map((student) => (
+          <TableRow key={student.id}>
+            <TableCell className="font-medium">{student.student_details.name}</TableCell>
+            <TableCell>{student.program_batch_details.name}</TableCell>
+            <TableCell>{student.channel_partner_details.name}</TableCell>
+            <TableCell>{formatCurrency(student.transfer_price)}</TableCell>
+            <TableCell>{student.commission_rate}%</TableCell>
+            <TableCell>{getStatusBadge(student.status)}</TableCell>
             <TableCell className="text-right">
               <div className="flex justify-end gap-2">
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => router.push(`/program-batches/${batch.id}`)}
+                  onClick={() => router.push(`/channel-partner-students/${student.id}/edit`)}
                 >
                   <Edit className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => handleDelete(batch.id)}
+                  onClick={() => handleDelete(student.id)}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>

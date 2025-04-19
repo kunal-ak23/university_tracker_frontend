@@ -7,6 +7,8 @@ import { Plus } from "lucide-react"
 export default async function ProgramBatchesPage() {
   const data = await getProgramBatches()
 
+  console.log(data);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
