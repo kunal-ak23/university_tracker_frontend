@@ -13,6 +13,7 @@ import {
   Wallet,
   User,
   Handshake,
+  Calendar,
 } from "lucide-react"
 
 export const sidebarConfig = [
@@ -56,6 +57,11 @@ export const sidebarConfig = [
         title: "Programs",
         href: "/programs",
         icon: BookOpen,
+      },
+      {
+        title: "Program Batches",
+        href: "/program-batches",
+        icon: Calendar,
       },
     ],
   },
