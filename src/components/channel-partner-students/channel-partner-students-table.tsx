@@ -12,7 +12,6 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { formatCurrency } from "@/service/utils"
 import { useRouter } from "next/navigation"
-import { format } from "date-fns"
 import { Button } from "@/components/ui/button"
 import { Edit, Trash2 } from "lucide-react"
 import { deleteChannelPartnerStudent } from "@/service/api/channel-partner-students"
@@ -74,11 +73,11 @@ export function ChannelPartnerStudentsTable({ students, onDelete }: ChannelPartn
         </TableRow>
       </TableHeader>
       <TableBody>
-        {students.map((student) => (
+        {students?.map((student) => (
           <TableRow key={student.id}>
             <TableCell className="font-medium">{student.student_details.name}</TableCell>
-            <TableCell>{student.program_batch_details.name}</TableCell>
-            <TableCell>{student.channel_partner_details.name}</TableCell>
+            <TableCell>{student?.program_batch_details?.name}</TableCell>
+            <TableCell>{student?.channel_partner_details?.name}</TableCell>
             <TableCell>{formatCurrency(student.transfer_price)}</TableCell>
             <TableCell>{student.commission_rate}%</TableCell>
             <TableCell>{getStatusBadge(student.status)}</TableCell>

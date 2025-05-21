@@ -1,7 +1,6 @@
 import { Student } from "./student"
 import { ChannelPartner } from "./channel-partner"
 import { ProgramBatch } from "./program-batch"
-import { UniversityBatch } from "./university-batch"
 
 export type ChannelPartnerStudentStatus = "enrolled" | "completed" | "dropped"
 
@@ -12,11 +11,13 @@ export interface ChannelPartnerStudent {
   program_batch?: number
   program_batch_details?: ProgramBatch
   batch?: number
-  batch_details?: UniversityBatch
+  // batch_details?: UniversityBatch
   student: number
   student_details: Student
   enrollment_date: string
   status: ChannelPartnerStudentStatus
+  transfer_price: number
+  commission_rate: number
   notes?: string
   created_at: string
   updated_at: string
