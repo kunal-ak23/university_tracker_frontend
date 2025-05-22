@@ -83,6 +83,8 @@ export function LeadsTable({
   const [searchQuery, setSearchQuery] = useState("")
   const [isDeleting, setIsDeleting] = useState<number | null>(null)
 
+  console.log(leads);
+
   const handleDelete = async (id: number) => {
     try {
       setIsDeleting(id)
@@ -186,6 +188,15 @@ export function LeadsTable({
                     onSort={onSort}
                   />
                 </TableHead>
+                <TableHead>
+                  <DataTableColumnHeader
+                    title="Created By"
+                    column="created_by"
+                    sortColumn={sortColumn}
+                    sortDirection={sortDirection}
+                    onSort={onSort}
+                  />
+                </TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -202,6 +213,7 @@ export function LeadsTable({
                       {LEAD_STATUS_CHOICES[lead.status].label}
                     </Badge>
                   </TableCell>
+                  <TableCell>{lead.agent_details.email}</TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

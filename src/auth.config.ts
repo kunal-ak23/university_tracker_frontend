@@ -88,7 +88,6 @@ export const authConfig = {
         async session({ session, token }) {
           session.accessToken = token.accessToken;
           session.refreshToken = token.refreshToken;
-          
           // Make sure user information is passed to the session
           session.user = {
             ...session.user,

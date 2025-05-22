@@ -11,6 +11,9 @@ export interface Lead {
   agent: {
     id: number
     name: string
+  },
+  agent_details: {
+    email: string
   }
   assigned_to: {
     id: number

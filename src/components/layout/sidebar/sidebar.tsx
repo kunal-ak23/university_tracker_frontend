@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { sidebarConfig } from "@/config/sidebar"
+import { sidebarConfig, UserRole } from "@/config/sidebar"
 import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react"
 import { cn } from "@/service/utils"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -13,12 +13,14 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
+import { useSession } from "next-auth/react"
 
 const SIDEBAR_STATE_KEY = 'sidebar-collapsed'
 
 export function Sidebar({className}: {className?: string}) {
   const pathname = usePathname()
   const [isCollapsed, setIsCollapsed] = useState(false)
+  const { data: session } = useSession()
 
   // Load initial state from localStorage
   useEffect(() => {
@@ -34,6 +36,18 @@ export function Sidebar({className}: {className?: string}) {
     setIsCollapsed(newState)
     localStorage.setItem(SIDEBAR_STATE_KEY, newState.toString())
   }
+
+  // Filter sections and items based on user role
+  const filteredConfig = sidebarConfig.filter(section => {
+    const userRole = (session?.user?.role || "") as UserRole
+    return section.roles.includes(userRole)
+  }).map(section => ({
+    ...section,
+    items: section.items.filter(item => {
+      const userRole = (session?.user?.role || "") as UserRole
+      return item.roles.includes(userRole)
+    })
+  })).filter(section => section.items.length > 0)
 
   return (
     <div className={cn(
@@ -61,7 +75,7 @@ export function Sidebar({className}: {className?: string}) {
         <div className="px-3 py-2">
           <div className="space-y-1">
             <TooltipProvider delayDuration={0}>
-              {sidebarConfig.map((section) => (
+              {filteredConfig.map((section) => (
                 <div key={section.title} className="space-y-1">
                   {!isCollapsed && (
                     <h4 className="px-2 text-sm font-semibold text-muted-foreground">

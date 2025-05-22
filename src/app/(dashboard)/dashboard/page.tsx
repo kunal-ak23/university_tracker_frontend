@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { IndianRupee, Users, FileText, AlertCircle } from "lucide-react"
+import { IndianRupee, Users, FileText, AlertCircle, Target, TrendingUp, Phone } from "lucide-react"
 import { Overview } from "@/components/dashboard/overview"
 import { RecentInvoices } from "@/components/dashboard/recent-invoices"
 import { RecentPayments } from "@/components/dashboard/recent-payments"
@@ -10,30 +10,57 @@ import { OverdueBillings } from "@/components/dashboard/overdue-billings"
 import { getDashboardSummary } from "@/service/api/dashboard"
 import type { DashboardSummary } from "@/service/api/dashboard"
 import { formatCurrency } from "@/service/utils"
-
+import { useSession } from "next-auth/react"
+import { getLeads } from "@/service/api/leads"
+import { LeadStatus } from "@/types/lead"
+import { Button } from "@/components/ui/button"
 
 export default function DashboardPage() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const { data: session } = useSession()
+  const [leadStats, setLeadStats] = useState({
+    total: 0,
+    hot: 0,
+    warm: 0,
+    cold: 0,
+    converted: 0
+  })
 
   useEffect(() => {
-    const loadSummary = async () => {
+    const loadData = async () => {
       try {
         setIsLoading(true)
         setError(null)
-        const data = await getDashboardSummary()
-        setSummary(data)
+        
+        if (session?.user?.role === "agent") {
+          // Load lead statistics for agents
+          const leadsResponse = await getLeads({ page: 1, page_size: 1000 })
+          const leads = leadsResponse.results
+          
+          setLeadStats({
+            total: leads.length,
+            hot: leads.filter(l => l.status === "hot").length,
+            warm: leads.filter(l => l.status === "warm").length,
+            cold: leads.filter(l => l.status === "cold").length,
+            converted: leads.filter(l => l.status === "converted").length
+          })
+        } else {
+          // Load regular dashboard summary for other roles
+          const data = await getDashboardSummary()
+          setSummary(data)
+        }
       } catch (error) {
-        console.error('Failed to load dashboard summary:', error)
+        console.error('Failed to load dashboard data:', error)
         setError('Failed to load dashboard data. Please try again later.')
       } finally {
         setIsLoading(false)
       }
     }
 
-    loadSummary()
-  }, [])
+    loadData()
+  }, [session?.user?.role])
 
   if (isLoading) {
     return (
@@ -51,6 +78,98 @@ export default function DashboardPage() {
     )
   }
 
+  if (session?.user?.role === "agent") {
+    return (
+      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+        <div className="flex items-center justify-between space-y-2">
+          <h2 className="text-3xl font-bold tracking-tight">Agent Dashboard</h2>
+        </div>
+        
+        {/* Lead Management Metrics */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Leads</CardTitle>
+              <Target className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{leadStats.total}</div>
+              <p className="text-xs text-muted-foreground">
+                Total leads in your pipeline
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Hot Leads</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{leadStats.hot}</div>
+              <p className="text-xs text-muted-foreground">
+                High priority leads to follow up
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Warm Leads</CardTitle>
+              <Phone className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{leadStats.warm}</div>
+              <p className="text-xs text-muted-foreground">
+                Leads requiring regular follow-up
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Converted</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{leadStats.converted}</div>
+              <p className="text-xs text-muted-foreground">
+                Successfully converted leads
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="grid gap-4 md:grid-cols-2">
+          <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => window.location.href = '/leads'}>
+            <CardHeader>
+              <CardTitle>Recent Leads</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  View and manage your recent leads
+                </p>
+                <Button variant="outline" size="sm" className="w-full">
+                  View All Leads
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Performance Overview</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                Track your lead conversion rates and performance
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
+  // Regular dashboard for other roles
   if (!summary) {
     return (
       <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
