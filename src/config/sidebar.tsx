@@ -14,39 +14,64 @@ import {
   User,
   Handshake,
   Calendar,
+  UserPlus,
 } from "lucide-react"
+import { LucideIcon } from "lucide-react"
 
-export const sidebarConfig = [
+export interface SidebarItem {
+  title: string
+  href: string
+  icon: LucideIcon
+}
+
+export interface SidebarSection {
+  title: string
+  items: SidebarItem[]
+}
+
+export const sidebarConfig: SidebarSection[] = [
   {
     title: "Dashboard",
-    href: "/dashboard",
-    icon: LayoutDashboard,
+    items: [
+      {
+        title: "Dashboard",
+        href: "/dashboard",
+        icon: LayoutDashboard,
+      },
+    ],
   },
   {
     title: "Student Management",
-    icon: User,
     items: [
       {
         title: "Students",
         href: "/students",
         icon: Users,
       },
+      {
+        title: "Leads",
+        href: "/leads",
+        icon: UserPlus,
+      },
     ],
   },
   {
     title: "Channel Partners",
-    icon: Handshake,
     items: [
       {
         title: "Partners",
         href: "/channel-partners",
-        icon: Handshake,
+        icon: Building2,
+      },
+      {
+        title: "Student Enrollments",
+        href: "/channel-partner-students",
+        icon: GraduationCap,
       },
     ],
   },
   {
     title: "OEM Management",
-    icon: Building,
     items: [
       {
         title: "OEMs",
@@ -59,36 +84,29 @@ export const sidebarConfig = [
         icon: BookOpen,
       },
       {
-        title: "Program Batches",
-        href: "/program-batches",
-        icon: Calendar,
+        title: "Batches",
+        href: "/batches",
+        icon: FileText,
       },
     ],
   },
   {
     title: "University Management",
-    icon: School,
     items: [
       {
         title: "Universities",
         href: "/universities",
-        icon: GraduationCap,
-      },
-      {
-        title: "Batches",
-        href: "/batches",
-        icon: Users,
+        icon: Building2,
       },
       {
         title: "Contracts",
         href: "/contracts",
-        icon: FileArchiveIcon,
+        icon: FileText,
       },
     ],
   },
   {
     title: "Finance",
-    icon: Wallet,
     items: [
       {
         title: "Billings",
