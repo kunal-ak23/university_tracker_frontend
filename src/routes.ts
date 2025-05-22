@@ -13,4 +13,4 @@ export const protectedRoutes = {
     SETTINGS: "/settings",
 }
 
-export const DEFAULT_REDIRECT_URL = "contracts";
+export const DEFAULT_REDIRECT_URL = "dashboard";

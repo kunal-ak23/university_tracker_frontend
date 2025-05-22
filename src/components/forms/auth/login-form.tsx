@@ -93,7 +93,7 @@ export function LoginForm() {
       }
 
       if (response?.ok) {
-        router.push("/contracts")
+        router.push("/dashboard")
         router.refresh()
       }
     } catch (error) {
