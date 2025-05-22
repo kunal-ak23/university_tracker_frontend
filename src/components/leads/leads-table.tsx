@@ -43,6 +43,7 @@ const LEAD_STATUS_CHOICES: Record<LeadStatus, { label: string; color: string }> 
   converted: { label: "Converted", color: "bg-green-500" },
   lost: { label: "Lost", color: "bg-red-700" },
   not_interested: { label: "Not Interested", color: "bg-gray-700" },
+  all: { label: "All", color: "bg-green-500" },
 }
 
 interface LeadsTableProps {
