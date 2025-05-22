@@ -5,17 +5,25 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { sidebarConfig, UserRole } from "@/config/sidebar"
-import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 import { cn } from "@/service/utils"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible"
 import { useSession } from "next-auth/react"
 
 const SIDEBAR_STATE_KEY = 'sidebar-collapsed'
+
+interface SidebarItem {
+  title: string
+  href: string
+  icon: any
+  roles: UserRole[]
+}
+
+interface SidebarSection {
+  title: string
+  items: SidebarItem[]
+  roles: UserRole[]
+}
 
 export function Sidebar({className}: {className?: string}) {
   const pathname = usePathname()
@@ -38,7 +46,7 @@ export function Sidebar({className}: {className?: string}) {
   }
 
   // Filter sections and items based on user role
-  const filteredConfig = sidebarConfig.filter(section => {
+  const filteredConfig = ((sidebarConfig as unknown) as SidebarSection[]).filter(section => {
     const userRole = (session?.user?.role || "") as UserRole
     return section.roles.includes(userRole)
   }).map(section => ({

@@ -1,4 +1,4 @@
-export type LeadStatus = 'hot' | 'warm' | 'cold' | 'closed' | 'converted' | 'lost' | 'not_interested'
+export type LeadStatus = 'hot' | 'warm' | 'cold' | 'closed' | 'converted' | 'lost' | 'not_interested' | 'all'
 
 export interface Lead {
   id: number

@@ -32,7 +32,7 @@ const formSchema = z.object({
   mobile: z.string().min(10, "Mobile number must be at least 10 digits"),
   email: z.string().email("Invalid email address"),
   address: z.string().optional(),
-  status: z.enum(["hot", "warm", "cold", "closed", "converted", "lost", "not_interested"]),
+  status: z.enum(["hot", "warm", "cold", "closed", "converted", "lost", "not_interested", "all"]),
   notes: z.string().optional(),
   assigned_to: z.number().optional(),
   agent: z.number(),
@@ -52,7 +52,7 @@ const STATUS_OPTIONS: { value: LeadStatus; label: string }[] = [
   { value: "closed", label: "Closed" },
   { value: "converted", label: "Converted" },
   { value: "lost", label: "Lost" },
-  { value: "not_interested", label: "Not Interested" },
+  { value: "not_interested", label: "Not Interested" }
 ]
 
 export function LeadForm({ mode, lead }: LeadFormProps) {

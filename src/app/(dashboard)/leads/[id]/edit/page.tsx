@@ -3,13 +3,13 @@ import { LeadForm } from "@/components/leads/lead-form"
 import { notFound } from "next/navigation"
 
 interface EditLeadPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export default async function EditLeadPage({ params }: EditLeadPageProps) {
-  const { id } = params
+  const { id } = await params;
   let lead
 
   try {

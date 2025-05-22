@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
@@ -11,7 +10,6 @@ import { Lead, LeadStatus } from "@/types/lead"
 import Link from "next/link"
 
 export default function LeadsPage() {
-  const router = useRouter()
   const { toast } = useToast()
   const [leads, setLeads] = useState<Lead[]>([])
   const [isLoading, setIsLoading] = useState(true)
