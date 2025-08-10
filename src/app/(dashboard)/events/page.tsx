@@ -98,7 +98,6 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
           }
         />
       </div>
-
       {/* Events List */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
