@@ -17,5 +17,6 @@ export default async function EventPage({
     notFound()
   }
 
+
   return <EventDetails initialEvent={event} />
 } 
