@@ -8,6 +8,7 @@ import {
   MessageSquare,
   Settings,
   BarChart3,
+  Calendar,
 } from "lucide-react"
 import { LucideIcon } from "lucide-react"
 
@@ -49,6 +50,12 @@ export const sidebarConfig: SidebarItem[] = [
     title: "Universities",
     href: "/universities",
     icon: Building2,
+    roles: ["admin", "poc"],
+  },
+  {
+    title: "Events",
+    href: "/events",
+    icon: Calendar,
     roles: ["admin", "poc"],
   },
   {
