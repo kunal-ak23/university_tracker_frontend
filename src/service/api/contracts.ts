@@ -7,6 +7,7 @@ interface GetContractsParams {
   search?: string
   page_size?: number
   ordering?: string
+  university?: number
 }
 
 export async function getContracts(params?: GetContractsParams): Promise<PaginatedResponse<Contract>> {
@@ -15,6 +16,7 @@ export async function getContracts(params?: GetContractsParams): Promise<Paginat
   if (params?.search) searchParams.append('search', params.search)
   if (params?.page_size) searchParams.append('page_size', params.page_size.toString())
   if (params?.ordering) searchParams.append('ordering', params.ordering)
+  if (params?.university) searchParams.append('university', params.university.toString())
   
   const queryString = searchParams.toString()
   const url = `/contracts/${queryString ? `?${queryString}` : ''}`

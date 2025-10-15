@@ -50,10 +50,15 @@ export const authConfig = {
                 id: data.user.id,
                 name: `${data.user.first_name} ${data.user.last_name}`.trim() || data.user.email,
                 email: data.user.email,
-                role: data.role,
+                role: data.role, // Use the role from the top level response
                 accessToken: data.access,
                 refreshToken: data.refresh,
-                ...data.user
+                first_name: data.user.first_name,
+                last_name: data.user.last_name,
+                username: data.user.username,
+                is_superuser: data.user.is_superuser,
+                is_staff: data.user.is_staff,
+                is_active: data.user.is_active,
               };
 
               return user;
@@ -80,6 +85,10 @@ export const authConfig = {
               last_name: user.last_name,
               email: user.email,
               name: user.name,
+              username: user.username,
+              is_superuser: user.is_superuser,
+              is_staff: user.is_staff,
+              is_active: user.is_active,
             };
           }
           return token;
@@ -97,6 +106,10 @@ export const authConfig = {
             last_name: token.last_name,
             name: token.name,
             email: token.email,
+            username: token.username,
+            is_superuser: token.is_superuser,
+            is_staff: token.is_staff,
+            is_active: token.is_active,
           };
 
           return session;

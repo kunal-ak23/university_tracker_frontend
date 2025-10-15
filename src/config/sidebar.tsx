@@ -8,10 +8,13 @@ import {
   CreditCard,
   FileText,
   UserPlus,
+  BarChart3,
+  Settings,
+  Calendar,
 } from "lucide-react"
 import { LucideIcon } from "lucide-react"
 
-export type UserRole = "admin" | "agent" | "provider_poc" | "university_poc" | "channel_partner_poc"
+export type UserRole = "admin" | "agent" | "provider_poc" | "university_poc" | "channel_partner_poc" | "staff"
 
 export interface SidebarItem {
   title: string
@@ -29,13 +32,13 @@ export interface SidebarSection {
 export const sidebarConfig: SidebarSection[] = [
   {
     title: "Dashboard",
-    roles: ["admin", "agent", "provider_poc", "university_poc", "channel_partner_poc"],
+    roles: ["admin", "agent", "provider_poc", "university_poc", "channel_partner_poc", "staff"],
     items: [
       {
         title: "Dashboard",
         href: "/dashboard",
         icon: LayoutDashboard,
-        roles: ["admin", "agent", "provider_poc", "university_poc", "channel_partner_poc"],
+        roles: ["admin", "agent", "provider_poc", "university_poc", "channel_partner_poc", "staff"],
       },
     ],
   },
@@ -101,25 +104,31 @@ export const sidebarConfig: SidebarSection[] = [
   },
   {
     title: "University Management",
-    roles: ["admin", "university_poc"],
+    roles: ["admin", "university_poc", "staff"],
     items: [
       {
         title: "Universities",
         href: "/universities",
         icon: Building2,
-        roles: ["admin", "university_poc"],
+        roles: ["admin", "university_poc", "staff"],
       },
       {
         title: "Contracts",
         href: "/contracts",
         icon: FileText,
-        roles: ["admin", "university_poc"],
+        roles: ["admin", "university_poc", "staff"],
+      },
+      {
+        title: "Events",
+        href: "/events",
+        icon: Calendar,
+        roles: ["admin", "university_poc", "staff"],
       },
     ],
   },
   {
     title: "Finance",
-    roles: ["admin"],
+    roles: ["admin", "staff"],
     items: [
       {
         title: "Billings",
@@ -137,6 +146,30 @@ export const sidebarConfig: SidebarSection[] = [
         title: "Payments",
         href: "/payments",
         icon: CreditCard,
+        roles: ["admin"],
+      },
+      {
+        title: "Expenses",
+        href: "/expenses",
+        icon: BarChart3,
+        roles: ["admin", "university_poc", "staff"],
+      }
+    ],
+  },
+  {
+    title: "Administration",
+    roles: ["admin"],
+    items: [
+      {
+        title: "User Management",
+        href: "/user-management",
+        icon: Users,
+        roles: ["admin"],
+      },
+      {
+        title: "Settings",
+        href: "/settings",
+        icon: Settings,
         roles: ["admin"],
       },
     ],

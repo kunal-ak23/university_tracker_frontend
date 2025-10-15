@@ -93,3 +93,24 @@ export async function getOverdueBillings(limit: number = 5, page: number = 1): P
   
   return apiFetch(`/dashboard/overdue_billings/?${searchParams.toString()}`)
 } 
+
+export interface QuarterlyItem { name: string; total: number }
+export interface QuarterlyExpensesResponse { year: number; quarters: QuarterlyItem[] }
+export interface ProfitabilityItem { name: string; revenue: number; expenses: number; profit: number }
+export interface ProfitabilityResponse { year: number; quarters: ProfitabilityItem[] }
+
+export async function getQuarterlyExpenses(params: { year: number; university?: number; batch?: number }): Promise<QuarterlyExpensesResponse> {
+  const searchParams = new URLSearchParams()
+  searchParams.append('year', params.year.toString())
+  if (params.university) searchParams.append('university', params.university.toString())
+  if (params.batch) searchParams.append('batch', params.batch.toString())
+  return apiFetch(`/dashboard/quarterly_expenses/?${searchParams.toString()}`)
+}
+
+export async function getProfitability(params: { year: number; university?: number; batch?: number }): Promise<ProfitabilityResponse> {
+  const searchParams = new URLSearchParams()
+  searchParams.append('year', params.year.toString())
+  if (params.university) searchParams.append('university', params.university.toString())
+  if (params.batch) searchParams.append('batch', params.batch.toString())
+  return apiFetch(`/dashboard/profitability/?${searchParams.toString()}`)
+}

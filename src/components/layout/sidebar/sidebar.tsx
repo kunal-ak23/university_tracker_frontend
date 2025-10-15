@@ -46,14 +46,14 @@ export function Sidebar({className}: {className?: string}) {
   }
 
   // Filter sections and items based on user role
-  const filteredConfig = ((sidebarConfig as unknown) as SidebarSection[]).filter(section => {
-    const userRole = (session?.user?.role || "") as UserRole
-    return section.roles.includes(userRole)
+  const userRole = (session?.user?.role || "") as UserRole
+  
+  const filteredConfig = sidebarConfig.filter(section => {
+    return section.roles.includes(userRole);
   }).map(section => ({
     ...section,
     items: section.items.filter(item => {
-      const userRole = (session?.user?.role || "") as UserRole
-      return item.roles.includes(userRole)
+      return item.roles.includes(userRole);
     })
   })).filter(section => section.items.length > 0)
 
