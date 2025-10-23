@@ -10,12 +10,12 @@ import Link from "next/link"
 
 interface BatchDetailProps {
   initialBatch: Batch
-  initialContract: Contract
+  initialUniversity: any
 }
 
-const BatchDetail = ({ initialBatch, initialContract }: BatchDetailProps) => {
+const BatchDetail = ({ initialBatch, initialUniversity }: BatchDetailProps) => {
   const [batch] = useState<Batch>(initialBatch)
-  const [contract] = useState<Contract>(initialContract)
+  const [university] = useState(initialUniversity)
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -33,8 +33,8 @@ const BatchDetail = ({ initialBatch, initialContract }: BatchDetailProps) => {
   const canCreateOem = batch.number_of_students > 0 && 
     batch?.start_date && 
     batch?.end_date && 
-    (batch?.cost_per_student_override || contract?.cost_per_student) && 
-    (batch?.oem_transfer_price_override || contract?.oem_transfer_price) &&
+    batch?.effective_cost_per_student && 
+    batch?.effective_oem_transfer_price &&
     batch?.effective_tax_rate
 
   return (
@@ -73,14 +73,9 @@ const BatchDetail = ({ initialBatch, initialContract }: BatchDetailProps) => {
             <h4 className="font-medium">Cost per Student</h4>
           </div>
           <p className="text-2xl font-bold">
-            ₹{parseFloat(batch.cost_per_student_override || contract?.cost_per_student || '0').toLocaleString('en-IN')}
+            ₹{parseFloat(batch.effective_cost_per_student || '0').toLocaleString('en-IN')}
           </p>
-          {batch.cost_per_student_override && contract && (
-            <p className={`text-sm ${parseFloat(batch.cost_per_student_override) > parseFloat(contract.cost_per_student) ? 'text-green-600' : 'text-red-600'}`}>
-              {parseFloat(batch.cost_per_student_override) > parseFloat(contract.cost_per_student) ? '+' : ''}
-              ₹{(parseFloat(batch.cost_per_student_override) - parseFloat(contract.cost_per_student)).toLocaleString('en-IN')}
-            </p>
-          )}
+          <p className="text-sm text-gray-500">Automatically calculated from contract pricing</p>
         </div>
         <div className="rounded-lg border p-4 space-y-2">
           <div className="flex items-center gap-2 text-gray-600">
@@ -88,14 +83,9 @@ const BatchDetail = ({ initialBatch, initialContract }: BatchDetailProps) => {
             <h4 className="font-medium">OEM Transfer Price</h4>
           </div>
           <p className="text-2xl font-bold">
-            ₹{parseFloat(batch.oem_transfer_price_override || contract?.oem_transfer_price || '0').toLocaleString('en-IN')}
+            ₹{parseFloat(batch.effective_oem_transfer_price || '0').toLocaleString('en-IN')}
           </p>
-          {batch.oem_transfer_price_override && contract && (
-            <p className={`text-sm ${parseFloat(batch.oem_transfer_price_override) > parseFloat(contract.oem_transfer_price) ? 'text-green-600' : 'text-red-600'}`}>
-              {parseFloat(batch.oem_transfer_price_override) > parseFloat(contract.oem_transfer_price) ? '+' : ''}
-              ₹{(parseFloat(batch.oem_transfer_price_override) - parseFloat(contract.oem_transfer_price)).toLocaleString('en-IN')}
-            </p>
-          )}
+          <p className="text-sm text-gray-500">Automatically calculated from contract pricing</p>
         </div>
         <div className="rounded-lg border p-4 space-y-2">
           <div className="flex items-center gap-2 text-gray-600">
@@ -138,6 +128,94 @@ const BatchDetail = ({ initialBatch, initialContract }: BatchDetailProps) => {
           </div>
         )}
       </div>
+
+      {/* Billing History Section */}
+      {batch.snapshots && batch.snapshots.length > 0 && (
+        <div className="rounded-lg border p-6 space-y-4">
+          <h3 className="text-xl font-semibold">Billing History</h3>
+          <p className="text-sm text-gray-600">
+            This batch has been included in {batch.snapshots.length} billing cycle(s)
+          </p>
+          
+          <div className="space-y-4">
+            {batch.snapshots.map((snapshot, index) => (
+              <div key={snapshot.id} className="border rounded-lg p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium text-lg">{snapshot.billing_name}</h4>
+                  <Badge className={getStatusColor(snapshot.status)}>
+                    {snapshot.status.charAt(0).toUpperCase() + snapshot.status.slice(1)}
+                  </Badge>
+                </div>
+                
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="space-y-1">
+                    <p className="text-sm text-gray-600">Students Billed</p>
+                    <p className="font-semibold">{snapshot.number_of_students}</p>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <p className="text-sm text-gray-600">Cost per Student</p>
+                    <p className="font-semibold">
+                      ₹{parseFloat(snapshot.cost_per_student).toLocaleString('en-IN')}
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <p className="text-sm text-gray-600">OEM Transfer Price</p>
+                    <p className="font-semibold">
+                      ₹{parseFloat(snapshot.oem_transfer_price).toLocaleString('en-IN')}
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <p className="text-sm text-gray-600">Tax Rate</p>
+                    <p className="font-semibold">{snapshot.tax_rate}%</p>
+                  </div>
+                </div>
+                
+                <div className="pt-2 border-t">
+                  <div className="flex justify-between items-center">
+                    <div className="space-y-1">
+                      <p className="text-sm text-gray-600">Total Amount (with tax)</p>
+                      <p className="text-lg font-bold text-green-600">
+                        ₹{(
+                          snapshot.number_of_students * 
+                          parseFloat(snapshot.cost_per_student) * 
+                          (1 + parseFloat(snapshot.tax_rate) / 100)
+                        ).toLocaleString('en-IN')}
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <p className="text-sm text-gray-600">OEM Transfer Amount (with tax)</p>
+                      <p className="text-lg font-bold text-blue-600">
+                        ₹{(
+                          snapshot.number_of_students * 
+                          parseFloat(snapshot.oem_transfer_price) * 
+                          (1 + parseFloat(snapshot.tax_rate) / 100)
+                        ).toLocaleString('en-IN')}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="text-xs text-gray-500">
+                  Snapshot created: {new Date(snapshot.created_at).toLocaleString()}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {(!batch.snapshots || batch.snapshots.length === 0) && (
+        <div className="rounded-lg border p-6 space-y-4">
+          <h3 className="text-xl font-semibold">Billing History</h3>
+          <p className="text-gray-600">
+            This batch has not been included in any billing cycles yet.
+          </p>
+        </div>
+      )}
     </div>
   )
 }

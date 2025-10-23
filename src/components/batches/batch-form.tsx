@@ -8,20 +8,21 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { createBatch, updateBatch } from "@/service/api/batches"
+import { getContractPricing } from "@/service/api/contracts"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useEffect, useState } from "react"
-import { Contract, Stream } from "@/types/contract"
-import { getContracts } from "@/service/api/contracts"
-import { TaxRate, getTaxRates } from "@/service/api/tax"
+import { University } from "@/types/university"
+import { Stream } from "@/types/stream"
+import { getUniversities, getUniversityStreams } from "@/service/api/universities"
 import { cn } from "@/service/utils"
 import { Batch } from "@/types/batch"
 
 const batchFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
+  university: z.string().min(1, "University is required"),
   stream: z.string().min(1, "Stream is required"),
-  contract: z.string().min(1, "Contract is required"),
   number_of_students: z.string()
     .min(1, "Number of students is required"),
   start_year: z.string()
@@ -30,9 +31,6 @@ const batchFormSchema = z.object({
     .min(1, "End year is required"),
   start_date: z.string().min(1, "Start date is required"),
   end_date: z.string().min(1, "End date is required"),
-  cost_per_student_override: z.string().optional(),
-  tax_rate_override: z.string().optional(),
-  oem_transfer_price_override: z.string().optional(),
   status: z.enum(["planned", "ongoing", "completed"]),
   notes: z.string().optional(),
 })
@@ -42,8 +40,6 @@ export type BatchFormValues = z.infer<typeof batchFormSchema>
 interface BatchFormProps {
   mode?: 'create' | 'edit'
   batch?: Batch
-  streamId?: string
-  contractId?: string
 }
 
 const statusOptions = [
@@ -56,21 +52,16 @@ export function BatchForm({ mode = 'create', batch }: BatchFormProps) {
   const router = useRouter()
   const { toast } = useToast()
   const [streams, setStreams] = useState<Stream[]>([])
-  const [contracts, setContracts] = useState<Contract[]>([])
-  const [taxRates, setTaxRates] = useState<TaxRate[]>([])
-  const [selectedContractDetails, setSelectedContractDetails] = useState<Contract | null>(null)
+  const [universities, setUniversities] = useState<University[]>([])
+  const [selectedUniversity, setSelectedUniversity] = useState<University | null>(null)
   const [initialValues, setInitialValues] = useState<BatchFormValues | null>(null)
 
-  // Fetch contracts and tax rates on mount
+  // Fetch universities on mount
   useEffect(() => {
     async function fetchData() {
       try {
-        const [fetchedContracts, fetchedTaxRates] = await Promise.all([
-          getContracts(),
-          getTaxRates()
-        ])
-        setContracts(fetchedContracts.results)
-        setTaxRates(fetchedTaxRates.results)
+        const fetchedUniversities = await getUniversities()
+        setUniversities(fetchedUniversities.results)
       } catch (error) {
         console.error('Failed to fetch data:', error)
         toast({
@@ -85,31 +76,32 @@ export function BatchForm({ mode = 'create', batch }: BatchFormProps) {
 
   // Load initial streams if editing a batch
   useEffect(() => {
-    if (mode === 'edit' && batch?.contract) {
-      const contract = contracts.find(c => c.id.toString() === batch.contract.toString())
-      if (contract) {
-        setSelectedContractDetails(contract)
-        setStreams(contract.streams)
+    if (mode === 'edit' && batch?.university) {
+      const universityId = typeof batch.university === 'object' ? batch.university.id : batch.university
+      const university = universities.find(u => u.id.toString() === universityId.toString())
+      if (university) {
+        setSelectedUniversity(university)
+        // Load streams for the university
+        getUniversityStreams(university.id.toString()).then(streamsData => {
+          setStreams(streamsData.results)
+        }).catch(error => {
+          console.error('Failed to load streams:', error)
+        })
       }
     }
-  }, [mode, batch, contracts])
+  }, [mode, batch, universities])
 
   const form = useForm<BatchFormValues>({
     resolver: zodResolver(batchFormSchema),
     defaultValues: {
       name: batch?.name ?? "",
-      stream: batch?.stream?.toString() ?? "",
-      contract: batch?.contract?.toString() ?? "",
+      university: (batch?.university && typeof batch.university === 'object' ? batch.university.id : batch?.university)?.toString() ?? "",
+      stream: (batch?.stream && typeof batch.stream === 'object' ? batch.stream.id : batch?.stream)?.toString() ?? "",
       number_of_students: batch?.number_of_students?.toString() ?? "",
       start_year: batch?.start_year?.toString() ?? new Date().getFullYear().toString(),
       end_year: batch?.end_year?.toString() ?? (new Date().getFullYear() + 1).toString(),
       start_date: batch?.start_date ?? "",
       end_date: batch?.end_date ?? "",
-      cost_per_student_override: batch?.cost_per_student_override ?? "",
-      tax_rate_override: batch?.tax_rate_override !== undefined && batch?.tax_rate_override !== null 
-        ? batch.tax_rate_override.toString() 
-        : "none",
-      oem_transfer_price_override: batch?.oem_transfer_price_override?.toString() ?? "",
       status: batch?.status as "ongoing" | "planned" | "completed" | undefined ?? "planned",
       notes: batch?.notes ?? "",
     },
@@ -132,84 +124,86 @@ export function BatchForm({ mode = 'create', batch }: BatchFormProps) {
       const initialValue = initialValues[key as keyof BatchFormValues]
       const currentValue = formValues[key as keyof BatchFormValues]
       
-      // Handle special case for tax_rate_override
-      if (key === 'tax_rate_override') {
-        if (initialValue === 'none' && !currentValue) return false
-        if (!initialValue && currentValue === 'none') return false
-      }
-      
       return initialValue !== currentValue
     })
     
     return changes.length > 0
   }
 
-  // Update selected contract details when contract changes
+  // Update streams when university changes
   useEffect(() => {
     const subscription = form.watch(async (value, { name }) => {
-      if (name === 'contract' && value.contract) {
+      if (name === 'university' && value.university) {
         try {
-          const selectedContract = contracts.find(c => c.id.toString() === value.contract)
-          if (selectedContract) {
-            setSelectedContractDetails(selectedContract)
-            setStreams(selectedContract.streams)
-            // Reset stream when contract changes
+          const selectedUniversity = universities.find(u => u.id.toString() === value.university)
+          if (selectedUniversity) {
+            setSelectedUniversity(selectedUniversity)
+            const universityStreams = await getUniversityStreams(selectedUniversity.id.toString())
+            setStreams(universityStreams.results)
+            // Reset stream when university changes
             form.setValue('stream', '')
           }
         } catch (error) {
           console.error('Failed to update streams:', error)
           toast({
             title: "Error",
-            description: "Failed to load streams for the selected contract",
+            description: "Failed to load streams for the selected university",
             variant: "destructive",
           })
         }
       }
     })
     return () => subscription.unsubscribe()
-  }, [form, toast, contracts])
+  }, [form, toast, universities])
 
-  // Function to calculate and format price difference
-  const getPriceDifference = (original: string | null, override: string | null) => {
-    if (!original || !override) return null
-    const diff = parseFloat(override) - parseFloat(original)
-    if (diff === 0) return null
-    return {
-      value: Math.abs(diff).toFixed(2),
-      increased: diff > 0
+  // State for effective pricing
+  const [effectivePricing, setEffectivePricing] = useState({
+    cost_per_student: "0.00",
+    oem_transfer_price: "0.00", 
+    tax_rate: "0.00"
+  })
+
+  // Fetch pricing when university, stream, or start year changes
+  useEffect(() => {
+    const fetchPricing = async () => {
+      const university = form.watch('university')
+      const stream = form.watch('stream')
+      const startYear = form.watch('start_year')
+      
+      if (university && stream && startYear) {
+        try {
+          const data = await getContractPricing(university, stream, startYear)
+          setEffectivePricing({
+            cost_per_student: data.cost_per_student || "0.00",
+            oem_transfer_price: data.oem_transfer_price || "0.00",
+            tax_rate: data.tax_rate || "0.00"
+          })
+        } catch (error) {
+          console.error('Error fetching pricing:', error)
+        }
+      } else {
+        setEffectivePricing({
+          cost_per_student: "0.00",
+          oem_transfer_price: "0.00",
+          tax_rate: "0.00"
+        })
+      }
     }
-  }
-
-  // Watch override values for comparison
-  const costPerStudentOverride = form.watch('cost_per_student_override')
-  const oemTransferPriceOverride = form.watch('oem_transfer_price_override')
-
-  // Calculate differences
-  const costDiff = selectedContractDetails ? getPriceDifference(
-    selectedContractDetails.cost_per_student, 
-    costPerStudentOverride || null
-  ) : null
-  const oemPriceDiff = selectedContractDetails ? getPriceDifference(
-    selectedContractDetails.oem_transfer_price, 
-    oemTransferPriceOverride || null
-  ) : null
+    
+    fetchPricing()
+  }, [form.watch('university'), form.watch('stream'), form.watch('start_year')])
 
   async function onSubmit(data: BatchFormValues) {
     try {
       const submitData = {
         name: data.name,
-        stream: parseInt(data.stream),
-        contract: parseInt(data.contract),
+        university_id: parseInt(data.university),
+        stream_id: parseInt(data.stream),
         number_of_students: parseInt(data.number_of_students),
         start_year: parseInt(data.start_year),
         end_year: parseInt(data.end_year),
         start_date: data.start_date,
         end_date: data.end_date,
-        cost_per_student_override: data.cost_per_student_override || null,
-        tax_rate_override: data.tax_rate_override === "none" || !data.tax_rate_override
-          ? null 
-          : parseFloat(data.tax_rate_override),
-        oem_transfer_price_override: data.oem_transfer_price_override || null,
         status: data.status,
         notes: data.notes || null,
       }
@@ -241,7 +235,6 @@ export function BatchForm({ mode = 'create', batch }: BatchFormProps) {
     }
   }
 
-  const selectedContract = form.watch('contract')
 
   return (
     <Form {...form}>
@@ -263,26 +256,26 @@ export function BatchForm({ mode = 'create', batch }: BatchFormProps) {
 
           <FormField
             control={form.control}
-            name="contract"
+            name="university"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Contract</FormLabel>
+                <FormLabel>University</FormLabel>
                 <Select 
                   onValueChange={field.onChange}
                   defaultValue={field.value}
                 >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select contract" />
+                      <SelectValue placeholder="Select university" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {contracts.map((contract) => (
+                    {universities.map((university) => (
                       <SelectItem 
-                        key={contract.id} 
-                        value={contract.id.toString()}
+                        key={university.id} 
+                        value={university.id.toString()}
                       >
-                        {contract.name}
+                        {university.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -301,11 +294,11 @@ export function BatchForm({ mode = 'create', batch }: BatchFormProps) {
                 <Select 
                   onValueChange={field.onChange}
                   defaultValue={field.value}
-                  disabled={!selectedContract}
+                  disabled={!selectedUniversity}
                 >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder={selectedContract ? "Select stream" : "Select a contract first"} />
+                      <SelectValue placeholder={selectedUniversity ? "Select stream" : "Select a university first"} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -440,108 +433,16 @@ export function BatchForm({ mode = 'create', batch }: BatchFormProps) {
             )}
           />
 
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Cost Overrides</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FormField
-                control={form.control}
-                name="cost_per_student_override"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cost per Student Override</FormLabel>
-                    <FormControl>
-                      <div className="space-y-2">
-                        <Input 
-                          type="text" 
-                          placeholder="Override contract's cost per student for this batch" 
-                          {...field}
-                        />
-                        {selectedContractDetails && (
-                          <div className="text-sm text-muted-foreground">
-                            Original: {selectedContractDetails.cost_per_student}
-                            {costDiff && (
-                              <span className={cn(
-                                "ml-2",
-                                costDiff.increased ? "text-green-600" : "text-red-600"
-                              )}>
-                                ({costDiff.increased ? '+' : '-'}{costDiff.value})
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="tax_rate_override"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tax Rate Override</FormLabel>
-                    <FormControl>
-                      <div className="space-y-2">
-                        <Select 
-                          onValueChange={field.onChange}
-                          value={field.value || "none"}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select tax rate override" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">No override</SelectItem>
-                            {taxRates.map((taxRate, key) => (
-                              <SelectItem 
-                                key={`tax-rate-${key}`} 
-                                value={taxRate.id.toString()}
-                              >
-                                {taxRate.name} ({taxRate.rate}%)
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="oem_transfer_price_override"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>OEM Transfer Price Override</FormLabel>
-                    <FormControl>
-                      <div className="space-y-2">
-                        <Input 
-                          type="text" 
-                          placeholder="Override contract's OEM transfer price for this batch" 
-                          {...field}
-                        />
-                        {selectedContractDetails && (
-                          <div className="text-sm text-muted-foreground">
-                            Original: {selectedContractDetails.oem_transfer_price}
-                            {oemPriceDiff && (
-                              <span className={cn(
-                                "ml-2",
-                                oemPriceDiff.increased ? "text-green-600" : "text-red-600"
-                              )}>
-                                ({oemPriceDiff.increased ? '+' : '-'}{oemPriceDiff.value})
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+          {/* Pricing is automatically calculated from contract's stream pricing */}
+          <div className="p-4 bg-blue-50 rounded-lg">
+            <h3 className="text-lg font-medium text-blue-900 mb-2">Automatic Pricing</h3>
+            <p className="text-sm text-blue-700">
+              Pricing will be automatically calculated based on the selected university, stream, and year from the contract's stream-specific pricing.
+            </p>
+            <div className="mt-2 text-sm text-blue-600">
+              <p>• Cost per Student: {effectivePricing.cost_per_student}</p>
+              <p>• OEM Transfer Price: {effectivePricing.oem_transfer_price}</p>
+              <p>• Tax Rate: {effectivePricing.tax_rate}%</p>
             </div>
           </div>
 

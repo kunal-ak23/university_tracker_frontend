@@ -8,18 +8,23 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { MultiSelect } from "@/components/ui/multi-select"
 import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Billing } from "@/types/billing"
 import { createBilling, updateBilling, publishBilling } from "@/service/api/billings"
 import { Batch } from "@/types/batch"
+import { getUniversities } from "@/service/api/universities"
+import { University } from "@/types/university"
 import { Badge } from "@/components/ui/badge"
 import { Users, Calendar, IndianRupee, Percent } from "lucide-react"
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
 
 const billingFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
+  university: z.string().min(1, "University is required"),
+  year: z.string().min(1, "Year is required"),
   batches: z.array(z.string()).min(1, "At least one batch is required"),
   notes: z.string().optional(),
 })
@@ -50,34 +55,91 @@ export function BillingForm({ mode = 'create', billing, availableBatches }: Bill
       return ''
     }).filter(Boolean) || []
   )
+  const [universities, setUniversities] = useState<University[]>([])
+  const [filteredBatches, setFilteredBatches] = useState<Batch[]>(availableBatches)
 
   const form = useForm<BillingFormValues>({
     resolver: zodResolver(billingFormSchema),
     defaultValues: {
       name: billing?.name ?? "",
+      university: "",
+      year: new Date().getFullYear().toString(),
       notes: billing?.notes ?? "",
       batches: selectedBatches,
     },
   })
 
+  // Fetch universities on mount
+  useEffect(() => {
+    const fetchUniversities = async () => {
+      try {
+        const data = await getUniversities()
+        setUniversities(data.results)
+      } catch (error) {
+        console.error("Error fetching universities:", error)
+        toast({
+          title: "Error",
+          description: "Failed to fetch universities",
+          variant: "destructive",
+        })
+      }
+    }
+    fetchUniversities()
+  }, [toast])
+
+  // Filter batches based on selected university and year
+  useEffect(() => {
+    const university = form.watch('university')
+    const year = form.watch('year')
+    
+    if (university && year) {
+      const filtered = availableBatches.filter(batch => 
+        batch.university?.id?.toString() === university && 
+        batch.start_year <= parseInt(year) && 
+        batch.end_year >= parseInt(year)
+      )
+      setFilteredBatches(filtered)
+      
+      // Auto-select all filtered batches when university or year changes
+      const filteredBatchIds = filtered.map(batch => batch.id.toString())
+      if (filteredBatchIds.length > 0) {
+        setSelectedBatches(filteredBatchIds)
+        form.setValue('batches', filteredBatchIds)
+      }
+    } else {
+      setFilteredBatches(availableBatches)
+    }
+  }, [form.watch('university'), form.watch('year'), availableBatches, form])
+
+  // Sync selectedBatches with form value when form value changes
+  useEffect(() => {
+    const formBatches = form.watch('batches')
+    if (formBatches && formBatches.length > 0) {
+      setSelectedBatches(formBatches)
+    }
+  }, [form.watch('batches')])
+
   // Get selected batch details
-  const selectedBatchDetails = availableBatches.filter(batch => 
+  const selectedBatchDetails = filteredBatches.filter(batch => 
     selectedBatches.includes(batch.id.toString())
   )
 
   // Calculate billing summary
   const billingSummary = selectedBatchDetails.reduce((summary, batch) => {
-    const baseAmount = batch.number_of_students * parseFloat(batch.effective_cost_per_student)
-    const taxRate = parseFloat(batch.effective_tax_rate)
+    const costPerStudent = parseFloat(batch.effective_cost_per_student) || 0
+    const oemTransferPrice = parseFloat(batch.effective_oem_transfer_price) || 0
+    const taxRate = parseFloat(batch.effective_tax_rate) || 0
+    
+    const baseAmount = batch.number_of_students * costPerStudent
     const totalAmount = baseAmount * (1 + taxRate / 100)
 
-    const baseOEMTransfer = batch.number_of_students * parseFloat(batch.effective_oem_transfer_price)
+    const baseOEMTransfer = batch.number_of_students * oemTransferPrice
     const totalOEMTransfer = baseOEMTransfer * (1 + taxRate / 100)
 
     return {
       totalStudents: summary.totalStudents + batch.number_of_students,
-      totalAmount: summary.totalAmount + totalAmount,
-      totalOEMTransfer: summary.totalOEMTransfer + totalOEMTransfer,
+      totalAmount: summary.totalAmount + (isNaN(totalAmount) ? 0 : totalAmount),
+      totalOEMTransfer: summary.totalOEMTransfer + (isNaN(totalOEMTransfer) ? 0 : totalOEMTransfer),
     }
   }, {
     totalStudents: 0,
@@ -174,6 +236,51 @@ export function BillingForm({ mode = 'create', billing, availableBatches }: Bill
           )}
         />
 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="university"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>University</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select university" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {universities.map((university) => (
+                      <SelectItem key={university.id} value={university.id.toString()}>
+                        {university.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="year"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Year</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    placeholder="2025"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
         <FormField
           control={form.control}
           name="batches"
@@ -182,11 +289,11 @@ export function BillingForm({ mode = 'create', billing, availableBatches }: Bill
               <FormLabel>Batches</FormLabel>
               <FormControl>
                 <MultiSelect
-                  options={availableBatches.map(batch => ({
-                    label: batch.name,
+                  options={filteredBatches.map(batch => ({
+                    label: `${batch.name} (${batch.stream?.name || 'Unknown Stream'})`,
                     value: batch.id.toString()
                   }))}
-                  value={field.value}
+                  value={selectedBatches}
                   onValueChange={(values) => {
                     setSelectedBatches(values)
                     field.onChange(values)
@@ -226,9 +333,9 @@ export function BillingForm({ mode = 'create', billing, availableBatches }: Bill
             <h4 className="font-medium text-gray-700">Selected Batch Details</h4>
             <div className="grid grid-cols-2 gap-4">
               {selectedBatchDetails.map((batch) => {
-                const effectiveCostPerStudent = parseFloat(batch.effective_cost_per_student)
-                const effectiveOEMTransfer = parseFloat(batch.effective_oem_transfer_price)
-                const effectiveTaxRate = parseFloat(batch.effective_tax_rate)
+                const effectiveCostPerStudent = parseFloat(batch.effective_cost_per_student) || 0
+                const effectiveOEMTransfer = parseFloat(batch.effective_oem_transfer_price) || 0
+                const effectiveTaxRate = parseFloat(batch.effective_tax_rate) || 0
                 const numStudents = batch.number_of_students
 
                 const baseTotal = numStudents * effectiveCostPerStudent
@@ -258,29 +365,29 @@ export function BillingForm({ mode = 'create', billing, availableBatches }: Bill
                       </div>
                       <div className="col-span-2 flex items-center gap-2 text-sm text-gray-600">
                         <Percent className="h-4 w-4" />
-                        Tax Rate: {effectiveTaxRate}%
+                        Tax Rate: {isNaN(effectiveTaxRate) ? '0' : effectiveTaxRate}%
                       </div>
                       <div className="col-span-2 flex items-center gap-2 text-sm font-medium">
                         <IndianRupee className="h-4 w-4" />
-                        Base Cost: ₹{effectiveCostPerStudent.toLocaleString('en-IN')} per student
+                        Base Cost: ₹{isNaN(effectiveCostPerStudent) ? '0' : effectiveCostPerStudent.toLocaleString('en-IN')} per student
                       </div>
                       <div className="col-span-2 flex items-center gap-2 text-sm font-medium">
                         <IndianRupee className="h-4 w-4" />
-                        With Tax: ₹{(effectiveCostPerStudent * (1 + effectiveTaxRate / 100)).toLocaleString('en-IN')} per student
+                        With Tax: ₹{isNaN(effectiveCostPerStudent * (1 + effectiveTaxRate / 100)) ? '0' : (effectiveCostPerStudent * (1 + effectiveTaxRate / 100)).toLocaleString('en-IN')} per student
                       </div>
                       <div className="col-span-2 border-t pt-2">
                         <div className="space-y-1">
                           <div className="flex items-center justify-between text-sm text-gray-600">
                             <span>Base Total:</span>
-                            <span>₹{baseTotal.toLocaleString('en-IN')}</span>
+                            <span>₹{isNaN(baseTotal) ? '0' : baseTotal.toLocaleString('en-IN')}</span>
                           </div>
                           <div className="flex items-center justify-between text-sm text-gray-600">
                             <span>Tax Amount:</span>
-                            <span>₹{taxAmount.toLocaleString('en-IN')}</span>
+                            <span>₹{isNaN(taxAmount) ? '0' : taxAmount.toLocaleString('en-IN')}</span>
                           </div>
                           <div className="flex items-center justify-between text-sm font-medium">
                             <span>Total with Tax:</span>
-                            <span>₹{totalWithTax.toLocaleString('en-IN')}</span>
+                            <span>₹{isNaN(totalWithTax) ? '0' : totalWithTax.toLocaleString('en-IN')}</span>
                           </div>
                         </div>
                       </div>
@@ -288,15 +395,15 @@ export function BillingForm({ mode = 'create', billing, availableBatches }: Bill
                         <div className="space-y-1">
                           <div className="flex items-center justify-between text-sm text-gray-600">
                             <span>Base OEM Transfer:</span>
-                            <span>₹{baseOEMTransfer.toLocaleString('en-IN')}</span>
+                            <span>₹{isNaN(baseOEMTransfer) ? '0' : baseOEMTransfer.toLocaleString('en-IN')}</span>
                           </div>
                           <div className="flex items-center justify-between text-sm text-gray-600">
                             <span>Tax Amount:</span>
-                            <span>₹{oemTaxAmount.toLocaleString('en-IN')}</span>
+                            <span>₹{isNaN(oemTaxAmount) ? '0' : oemTaxAmount.toLocaleString('en-IN')}</span>
                           </div>
                           <div className="flex items-center justify-between text-sm font-medium">
                             <span>OEM Total with Tax:</span>
-                            <span>₹{oemTotalWithTax.toLocaleString('en-IN')}</span>
+                            <span>₹{isNaN(oemTotalWithTax) ? '0' : oemTotalWithTax.toLocaleString('en-IN')}</span>
                           </div>
                         </div>
                       </div>

@@ -138,9 +138,9 @@ export function ContractsTable({
       header: "Cost Details",
       cell: ({ row }: { row: Row<Contract> }) => (
         <div className="space-y-1 text-sm">
-          <div>Cost/Student: ₹{row.original.cost_per_student}</div>
-          <div>Transfer Price: ₹{row.original.oem_transfer_price}</div>
-          <div>Tax Rate: {row.original.tax_rate.rate}%</div>
+          <div>Years: {row.original.start_year} - {row.original.end_year}</div>
+          <div>Streams: {row.original.stream_pricing?.length || 0} configured</div>
+          <div>Status: {row.original.status}</div>
         </div>
       ),
     },

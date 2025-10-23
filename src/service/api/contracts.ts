@@ -56,3 +56,17 @@ export async function archiveContract(id: string): Promise<Contract> {
   formData.append('status', 'archived');
   return postFormData(`/contracts/${id}/`,formData,{method: 'PATCH',});
 }
+
+export async function getContractPricing(university: string, stream: string, year: string): Promise<{
+  cost_per_student: string;
+  oem_transfer_price: string;
+  tax_rate: string;
+}> {
+  const searchParams = new URLSearchParams({
+    university,
+    stream,
+    year
+  });
+  
+  return apiFetch(`/contracts/pricing/?${searchParams.toString()}`)
+}

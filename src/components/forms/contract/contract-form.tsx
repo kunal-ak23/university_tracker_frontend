@@ -17,6 +17,7 @@ import { getUniversities, getUniversityStreams } from "@/service/api/universitie
 import { getOEMs, getOEMPrograms } from "@/service/api/oems"
 import { getTaxRates, TaxRate } from "@/service/api/tax"
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
+import { PricingMatrix } from "./pricing-matrix"
 import { Contract, Stream } from "@/types/contract"
 import { University } from "@/types/university"
 import { OEM } from "@/types/oem"
@@ -25,14 +26,18 @@ const contractFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
   university: z.union([z.string(), z.number()]).transform(val => val.toString()),
   oem: z.union([z.string(), z.number()]).transform(val => val.toString()),
-  cost_per_student: z.string().min(1, "Cost per student is required"),
-  oem_transfer_price: z.string().min(1, "OEM transfer price is required"),
-  tax_rate: z.string().min(1, "Tax rate is required"),
+  start_year: z.string().min(1, "Start year is required"),
+  end_year: z.string().min(1, "End year is required"),
   status: z.enum(["active", "planned", "inactive", "archived"]),
-  start_date: z.string().min(1, "Start date is required"),
-  end_date: z.string().min(1, "End date is required"),
   programs: z.array(z.union([z.string(), z.number()])).transform(arr => arr.map(val => val.toString())),
-  streams: z.array(z.union([z.string(), z.number()])).transform(arr => arr.map(val => val.toString())),
+  streams: z.array(z.union([z.string(), z.number()])).transform(arr => arr.map(val => val.toString())).optional(),
+  stream_pricing: z.array(z.object({
+    stream_id: z.string(),
+    year: z.number(),
+    cost_per_student: z.string(),
+    oem_transfer_price: z.string(),
+    tax_rate_id: z.string(),
+  })).optional(),
 })
 
 type ContractFormValues = z.infer<typeof contractFormSchema>
@@ -55,14 +60,33 @@ export function ContractForm({ mode = 'create', contract }: ContractFormProps) {
   const [files, setFiles] = useState<File[]>([])
   const [universities, setUniversities] = useState<University[]>([])
   const [oems, setOems] = useState<OEM[]>([])
-  const [selectedPrograms, setSelectedPrograms] = useState<string[]>([])
-  const [selectedStreams, setSelectedStreams] = useState<string[]>([])
   const [availablePrograms, setAvailablePrograms] = useState<Array<{ id: string; name: string }>>([])
   const [availableStreams, setAvailableStreams] = useState<Array<{ id: string; name: string }>>([])
   const [isDirty, setIsDirty] = useState(false)
   const [hasFileChanges, setHasFileChanges] = useState(false)
   const [taxRates, setTaxRates] = useState<TaxRate[]>([])
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [streamPricing, setStreamPricing] = useState<Array<{
+    stream_id: string
+    year: number
+    cost_per_student: string
+    oem_transfer_price: string
+    tax_rate_id: string
+  }>>([])
+  const [isPricingInitialized, setIsPricingInitialized] = useState(false)
+
+  // Debug wrapper for setStreamPricing
+  const handleStreamPricingChange = (newPricing: Array<{
+    stream_id: string
+    year: number
+    cost_per_student: string
+    oem_transfer_price: string
+    tax_rate_id: string
+  }>) => {
+    console.log('ContractForm: setStreamPricing called with:', newPricing)
+    setStreamPricing(newPricing)
+    setIsPricingInitialized(true) // Mark as initialized after user changes
+  }
 
   const form = useForm<ContractFormValues>({
     resolver: zodResolver(contractFormSchema),
@@ -72,14 +96,18 @@ export function ContractForm({ mode = 'create', contract }: ContractFormProps) {
       name: contract?.name ?? "",
       university: contract?.university?.id?.toString() ?? "",
       oem: contract?.oem?.id?.toString() ?? "",
-      cost_per_student: contract?.cost_per_student?.toString() ?? "",
-      oem_transfer_price: contract?.oem_transfer_price?.toString() ?? "",
-      tax_rate: contract?.tax_rate?.id.toString() ?? "",
+      start_year: contract?.start_year?.toString() ?? "",
+      end_year: contract?.end_year?.toString() ?? "",
       status: contract?.status as "planned" | "active" | "inactive" | "archived" | undefined ?? "planned",
-      start_date: contract?.start_date ?? "",
-      end_date: contract?.end_date ?? "",
       programs: contract?.programs?.map(cp => cp.id.toString()) ?? [],
-      streams: contract?.streams?.map(s => s.id.toString()) ?? [],
+      streams: contract?.stream_pricing?.map(sp => sp.stream.id.toString()).filter((id, index, self) => self.indexOf(id) === index) ?? [],
+      stream_pricing: contract?.stream_pricing?.map(sp => ({
+        stream_id: sp.stream.id.toString(),
+        year: sp.year,
+        cost_per_student: sp.cost_per_student,
+        oem_transfer_price: sp.oem_transfer_price,
+        tax_rate_id: sp.tax_rate.id.toString(),
+      })) ?? [],
     },
   })
 
@@ -114,8 +142,6 @@ export function ContractForm({ mode = 'create', contract }: ContractFormProps) {
     async function initializeEditMode() {
       if (mode === 'edit' && contract) {
         try {
-          setSelectedPrograms(contract.programs.map(cp => cp.id.toString()));
-          setSelectedStreams(contract.streams.map(s => s.id.toString()))
           
           if (contract.oem?.id) {
             const programs = await getOEMPrograms(contract.oem.id.toString())
@@ -126,6 +152,23 @@ export function ContractForm({ mode = 'create', contract }: ContractFormProps) {
             const streams = await getUniversityStreams(contract.university.id.toString())
             // @ts-ignore
             setAvailableStreams(streams.results)
+          }
+
+          // Initialize stream pricing data only if not already initialized
+          if (contract.stream_pricing && !isPricingInitialized) {
+            const pricingData = contract.stream_pricing.map(sp => ({
+              stream_id: sp.stream.id.toString(),
+              year: sp.year,
+              cost_per_student: sp.cost_per_student,
+              oem_transfer_price: sp.oem_transfer_price,
+              tax_rate_id: sp.tax_rate.id.toString(),
+            }))
+            setStreamPricing(pricingData)
+            setIsPricingInitialized(true)
+            
+            // Initialize streams field from stream pricing data (deduplicated)
+            const streamIds = contract.stream_pricing.map(sp => sp.stream.id.toString()).filter((id, index, self) => self.indexOf(id) === index)
+            form.setValue('streams', streamIds)
           }
         } catch (error) {
           console.error('Failed to initialize edit mode:', error)
@@ -141,13 +184,17 @@ export function ContractForm({ mode = 'create', contract }: ContractFormProps) {
     initializeEditMode()
   }, [mode, contract, toast, form])
 
+  // Reset pricing initialization when switching modes
+  useEffect(() => {
+    setIsPricingInitialized(false)
+  }, [mode])
+
   // Update available streams when university changes
   const onUniversityChange = async (universityId: string) => {
     try {
       const streams = await getUniversityStreams(universityId)
       // @ts-ignore
       setAvailableStreams(streams.results)
-      setSelectedStreams([])
       form.setValue('streams', [])
     } catch (error) {
       console.error('Failed to fetch university streams:', error)
@@ -164,7 +211,6 @@ export function ContractForm({ mode = 'create', contract }: ContractFormProps) {
     try {
       const programs = await getOEMPrograms(oemId)
       setAvailablePrograms(programs.results)
-      setSelectedPrograms([])
       form.setValue('programs', [])
     } catch (error) {
       console.error('Failed to fetch OEM programs:', error)
@@ -233,27 +279,38 @@ export function ContractForm({ mode = 'create', contract }: ContractFormProps) {
       
       // Add contract data
       Object.entries(data).forEach(([key, value]) => {
-        if (key === 'streams') {
-            // Convert string IDs back to numbers for streams
-            const numericIds = (value as string[]).map(id => parseInt(id))
-            numericIds.forEach(id => {
-                formData.append('streams_ids[]', id.toString())
-            })
-        } else if (key === 'programs') {
+        if (key === 'programs') {
             // Convert string IDs back to numbers for programs
             const numericIds = (value as string[]).map(id => parseInt(id))
             // Ensure it's sent as an array even with single value
             numericIds.forEach(id => {
                 formData.append('programs_ids[]', id.toString())
             })
+        } else if (key === 'streams') {
+            // Convert string IDs back to numbers for streams
+            const numericIds = (value as string[]).map(id => parseInt(id))
+            // Ensure it's sent as an array even with single value
+            numericIds.forEach(id => {
+                formData.append('streams_ids[]', id.toString())
+            })
         } else if (key === 'university' || key === 'oem') {
           // Convert string IDs back to numbers for single values
           formData.append(key, parseInt(value as string).toString())
-        } else if (key === 'tax_rate') {
-          formData.append(key, parseFloat(value as string).toString())
+        } else if (key === 'start_year' || key === 'end_year') {
+          formData.append(key, parseInt(value as string).toString())
         } else {
           formData.append(key, value as string)
         }
+      })
+
+      // Add stream pricing data
+      console.log('ContractForm: Submitting streamPricing data:', streamPricing)
+      streamPricing.forEach((pricing, index) => {
+        formData.append(`stream_pricing[${index}][stream_id]`, pricing.stream_id)
+        formData.append(`stream_pricing[${index}][year]`, pricing.year.toString())
+        formData.append(`stream_pricing[${index}][cost_per_student]`, pricing.cost_per_student)
+        formData.append(`stream_pricing[${index}][oem_transfer_price]`, pricing.oem_transfer_price)
+        formData.append(`stream_pricing[${index}][tax_rate_id]`, pricing.tax_rate_id)
       })
 
       // Add files only in create mode or if new files are added in edit mode
@@ -369,6 +426,7 @@ export function ContractForm({ mode = 'create', contract }: ContractFormProps) {
     }
   }
 
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -436,7 +494,6 @@ export function ContractForm({ mode = 'create', contract }: ContractFormProps) {
                       }))}
                       value={field.value}
                       onValueChange={(values) => {
-                        setSelectedPrograms(values)
                         field.onChange(values)
                       }}
                     />
@@ -499,8 +556,16 @@ export function ContractForm({ mode = 'create', contract }: ContractFormProps) {
                       }))}
                       value={field.value}
                       onValueChange={(values) => {
-                        setSelectedStreams(values)
                         field.onChange(values)
+                        
+                        // Remove pricing entries for streams that are no longer selected
+                        const previousStreams = field.value || []
+                        const removedStreams = previousStreams.filter(streamId => !values.includes(streamId))
+                        
+                        if (removedStreams.length > 0) {
+                          const updatedPricing = streamPricing.filter(p => !removedStreams.includes(p.stream_id))
+                          setStreamPricing(updatedPricing)
+                        }
                       }}
                     />
                   </FormControl>
@@ -510,64 +575,19 @@ export function ContractForm({ mode = 'create', contract }: ContractFormProps) {
             />
           </div>
 
-          {/* Cost Fields */}
-          <FormField
-            control={form.control}
-            name="cost_per_student"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Cost Per Student</FormLabel>
-                <FormControl>
-                  <Input type="number" placeholder="0.00" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="oem_transfer_price"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>OEM Transfer Price</FormLabel>
-                <FormControl>
-                  <Input type="number" placeholder="0.00" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="tax_rate"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Tax Rate</FormLabel>
-                <Select 
-                  onValueChange={field.onChange}
-                  value={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select tax rate" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {taxRates.map((tax) => (
-                      <SelectItem 
-                        key={tax.id} 
-                        value={tax.id.toString()}>
-                        {tax.rate}%
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {/* Pricing Matrix */}
+          {form.getValues("university") && form.getValues("start_year") && form.getValues("end_year") && availableStreams.length > 0 && (
+            <div className="col-span-2">
+              <PricingMatrix
+                streams={availableStreams}
+                taxRates={taxRates}
+                startYear={parseInt(form.getValues("start_year"))}
+                endYear={parseInt(form.getValues("end_year"))}
+                pricing={streamPricing}
+                onPricingChange={handleStreamPricingChange}
+              />
+            </div>
+          )}
 
           <FormField
             control={form.control}
@@ -601,15 +621,20 @@ export function ContractForm({ mode = 'create', contract }: ContractFormProps) {
             )}
           />
 
-          {/* Date Fields */}
           <FormField
             control={form.control}
-            name="start_date"
+            name="start_year"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Start Date</FormLabel>
+                <FormLabel>Start Year</FormLabel>
                 <FormControl>
-                  <Input type="date" {...field} />
+                  <Input 
+                    type="number" 
+                    placeholder="2024" 
+                    min="2020"
+                    max="2030"
+                    {...field} 
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -618,18 +643,26 @@ export function ContractForm({ mode = 'create', contract }: ContractFormProps) {
 
           <FormField
             control={form.control}
-            name="end_date"
+            name="end_year"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>End Date</FormLabel>
+                <FormLabel>End Year</FormLabel>
                 <FormControl>
-                  <Input type="date" {...field} />
+                  <Input 
+                    type="number" 
+                    placeholder="2025" 
+                    min="2020"
+                    max="2030"
+                    {...field} 
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
+
         </div>
+
 
         <div className="space-y-4">
           <FormLabel>Contract Files</FormLabel>

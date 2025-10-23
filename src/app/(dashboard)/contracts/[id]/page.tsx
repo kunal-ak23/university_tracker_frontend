@@ -48,12 +48,12 @@ params: Promise<{ id: string }>;
               </dd>
             </div>
             <div className="flex justify-between">
-              <dt className="font-medium">Cost Per Student</dt>
-              <dd>{formatCurrency(parseFloat(contract.cost_per_student))}</dd>
+              <dt className="font-medium">Start Year</dt>
+              <dd>{contract.start_year}</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="font-medium">OEM Transfer Price</dt>
-              <dd>{formatCurrency(parseFloat(contract.oem_transfer_price))}</dd>
+              <dt className="font-medium">End Year</dt>
+              <dd>{contract.end_year}</dd>
             </div>
             <div className="flex justify-between">
               <dt className="font-medium">Start Date</dt>
@@ -100,16 +100,29 @@ params: Promise<{ id: string }>;
           </div>
         )}
 
-        {contract.streams.length > 0 && (
+        {contract.stream_pricing && contract.stream_pricing?.length > 0 && (
           <div className="col-span-2 rounded-lg border p-6 space-y-4">
-            <h3 className="text-xl font-semibold">Eligible Streams</h3>
+            <h3 className="text-xl font-semibold">Stream Pricing</h3>
             <div className="grid gap-4">
-              {contract.streams.map((stream, index) => (
-                <div key={"stream" + index} className="rounded border p-4">
-                  <h4 className="font-medium">{stream.name}</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Duration: {stream.duration} {stream.duration_unit}
-                  </p>
+              {contract.stream_pricing.map((pricing, index) => (
+                <div key={"pricing" + index} className="rounded border p-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="font-medium">{pricing.stream.name}</h4>
+                      <p className="text-sm text-muted-foreground">Year: {pricing.year}</p>
+                    </div>
+                    <div className="text-right space-y-1">
+                      <div className="text-sm">
+                        <span className="font-medium">Cost/Student:</span> {formatCurrency(parseFloat(pricing.cost_per_student))}
+                      </div>
+                      <div className="text-sm">
+                        <span className="font-medium">Transfer Price:</span> {formatCurrency(parseFloat(pricing.oem_transfer_price))}
+                      </div>
+                      <div className="text-sm">
+                        <span className="font-medium">Tax Rate:</span> {pricing.tax_rate?.rate}%
+                      </div>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
