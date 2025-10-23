@@ -45,6 +45,7 @@ type ContractFormValues = z.infer<typeof contractFormSchema>
 interface ContractFormProps {
   mode?: 'create' | 'edit'
   contract?: Contract
+  preSelectedUniversity?: string
 }
 
 const statusOptions = [
@@ -54,7 +55,7 @@ const statusOptions = [
   { label: "Archived", value: "archived" },
 ] as const
 
-export function ContractForm({ mode = 'create', contract }: ContractFormProps) {
+export function ContractForm({ mode = 'create', contract, preSelectedUniversity }: ContractFormProps) {
   const router = useRouter()
   const { toast } = useToast()
   const [files, setFiles] = useState<File[]>([])
@@ -94,7 +95,7 @@ export function ContractForm({ mode = 'create', contract }: ContractFormProps) {
     reValidateMode: "onChange",
     defaultValues: {
       name: contract?.name ?? "",
-      university: contract?.university?.id?.toString() ?? "",
+      university: contract?.university?.id?.toString() ?? preSelectedUniversity ?? "",
       oem: contract?.oem?.id?.toString() ?? "",
       start_year: contract?.start_year?.toString() ?? "",
       end_year: contract?.end_year?.toString() ?? "",
@@ -188,6 +189,13 @@ export function ContractForm({ mode = 'create', contract }: ContractFormProps) {
   useEffect(() => {
     setIsPricingInitialized(false)
   }, [mode])
+
+  // Load streams when university is pre-selected
+  useEffect(() => {
+    if (preSelectedUniversity && mode === 'create') {
+      onUniversityChange(preSelectedUniversity)
+    }
+  }, [preSelectedUniversity, mode])
 
   // Update available streams when university changes
   const onUniversityChange = async (universityId: string) => {

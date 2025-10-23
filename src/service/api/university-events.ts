@@ -33,11 +33,9 @@ export interface UniversityEvent {
   }
   approved_at?: string
   rejection_reason?: string
-  outlook_calendar_id?: string
-  outlook_calendar_url?: string
   notion_page_id?: string
   notion_page_url?: string
-  integration_status: 'pending' | 'outlook_created' | 'notion_created' | 'both_created' | 'failed'
+  integration_status: 'pending' | 'notion_created' | 'failed'
   integration_notes?: string
   invitees_list?: string[]
   invitee_emails?: string[]
@@ -101,7 +99,14 @@ export const getUniversityEvents = async (params?: {
   
   const queryString = searchParams.toString()
   const url = `/university-events/${queryString ? `?${queryString}` : ''}`
-  return apiFetch(url)
+  
+  try {
+    const response = await apiFetch(url)
+    return response
+  } catch (error) {
+    console.error('Error in getUniversityEvents:', error)
+    throw error
+  }
 }
 
 // Get a single university event

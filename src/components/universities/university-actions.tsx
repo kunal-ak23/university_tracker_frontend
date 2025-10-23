@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
 import { deleteUniversity } from "@/service/api/universities"
 import Link from "next/link"
-import { Edit, Trash2 } from "lucide-react"
+import { Edit, Trash2, FileText } from "lucide-react"
 import {
   Tooltip,
   TooltipContent,
@@ -48,6 +48,23 @@ export function UniversityActions({ universityId }: UniversityActionsProps) {
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
+            <Link href={`/contracts/new?university=${universityId}`}>
+              <Button 
+                variant="default"
+                size="sm"
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Add Contract
+              </Button>
+            </Link>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Create New Contract</p>
+          </TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
             <Button 
               variant="destructive"
               size="icon"
@@ -65,7 +82,7 @@ export function UniversityActions({ universityId }: UniversityActionsProps) {
           <TooltipTrigger asChild>
             <Link href={`/universities/${universityId}/edit`}>
               <Button 
-                variant="default"
+                variant="outline"
                 size="icon"
               >
                 <Edit className="h-4 w-4" />

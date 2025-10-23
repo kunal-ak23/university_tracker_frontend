@@ -10,6 +10,7 @@ export async function apiFetch(
   options: RequestInit = {}
 ) {
   const session = await auth();
+  
   // @ts-ignore
   if (!session?.accessToken || !session?.refreshToken) {
     throw new Error('No access token found')
@@ -30,7 +31,6 @@ export async function apiFetch(
       },
     })
   } catch (error) {
-    console.error('Fetch failed:', error)
     throw new Error('Network request failed', { cause: error })
   }
 
@@ -101,12 +101,13 @@ export async function apiFetch(
   try {
     // Check if response has content before parsing JSON
     const contentType = response.headers.get('content-type')
+    
     if (contentType && contentType.includes('application/json')) {
-      return await response.json()
+      const jsonData = await response.json()
+      return jsonData
     }
     return null;
   } catch (error) {
-    console.error('JSON parsing failed:', error)
     throw new Error('Failed to parse response')
   }
 }

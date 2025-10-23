@@ -1,10 +1,12 @@
 import { getUniversityEvents } from "@/service/api/university-events"
 import { getUniversities } from "@/service/api/universities"
 import { UniversityEventForm } from "@/components/universities/university-event-form"
+import { EventsCalendar } from "@/components/events/events-calendar"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Calendar, Clock, MapPin } from "lucide-react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Calendar, Clock, MapPin, List, CalendarDays } from "lucide-react"
 import { UniversityEvent } from "@/service/api/university-events"
 import { University } from "@/types/university"
 import Link from "next/link"
@@ -32,8 +34,9 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
       page: page ? parseInt(page) : 1,
       page_size: 20
     })
+    
     events = eventsResponse.results || []
-    totalCount = eventsResponse.count
+    totalCount = eventsResponse.count || 0
   } catch (error) {
     console.error('Error fetching events:', error)
   }
@@ -73,9 +76,24 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString)
     return {
-      date: date.toLocaleDateString(),
-      time: date.toLocaleTimeString(),
-      full: date.toLocaleString()
+      date: date.toLocaleDateString('en-IN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }),
+      time: date.toLocaleTimeString('en-IN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      }),
+      full: date.toLocaleString('en-IN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      })
     }
   }
 
@@ -98,82 +116,101 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
           }
         />
       </div>
-      {/* Events List */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-medium">
-            Events ({totalCount})
-          </h3>
-        </div>
 
-        {events.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <Calendar className="h-12 w-12 text-gray-400 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No events found</h3>
-              <p className="text-gray-600 text-center mb-4">
-                Get started by creating your first event.
-              </p>
-              <UniversityEventForm 
-                universityId={universities[0]?.id ? parseInt(universities[0].id.toString()) : 1}
-                trigger={<Button>Create Event</Button>}
-              />
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {events.map((event) => (
-              <Card key={event.id} className="hover:shadow-md transition-shadow">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <CardTitle className="text-lg line-clamp-2">{event.title}</CardTitle>
-                    <Badge className={getStatusColor(event.status)}>
-                      {event.status.replace('_', ' ').charAt(0).toUpperCase() + event.status.replace('_', ' ').slice(1)}
-                    </Badge>
-                  </div>
-                  <CardDescription>
-                    {event.university_details?.name}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <p className="text-sm text-gray-600 line-clamp-2">
-                    {event.description}
-                  </p>
-                  
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Calendar className="h-4 w-4" />
-                      {formatDateTime(event.start_datetime).date}
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Clock className="h-4 w-4" />
-                      {formatDateTime(event.start_datetime).time} - {formatDateTime(event.end_datetime).time}
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <MapPin className="h-4 w-4" />
-                      {event.location}
-                    </div>
-                  </div>
+      <Tabs defaultValue="calendar" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="calendar" className="flex items-center gap-2">
+            <CalendarDays className="h-4 w-4" />
+            Calendar View
+          </TabsTrigger>
+          <TabsTrigger value="list" className="flex items-center gap-2">
+            <List className="h-4 w-4" />
+            List View
+          </TabsTrigger>
+        </TabsList>
 
-                  {event.batch_details && (
-                    <div className="text-sm text-gray-600">
-                      Batch: {event.batch_details.name}
-                    </div>
-                  )}
-
-                  <div className="pt-2">
-                    <Link href={`/events/${event.id}`}>
-                      <Button variant="outline" size="sm" className="w-full">
-                        View Details
-                      </Button>
-                    </Link>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+        <TabsContent value="calendar" className="space-y-4">
+          <div className="bg-white rounded-lg border p-4">
+            <EventsCalendar events={events} />
           </div>
-        )}
-      </div>
+        </TabsContent>
+
+        <TabsContent value="list" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-medium">
+              Events ({totalCount})
+            </h3>
+          </div>
+
+          {events.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <Calendar className="h-12 w-12 text-gray-400 mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No events found</h3>
+                <p className="text-gray-600 text-center mb-4">
+                  Get started by creating your first event.
+                </p>
+                <UniversityEventForm 
+                  universityId={universities[0]?.id ? parseInt(universities[0].id.toString()) : 1}
+                  trigger={<Button>Create Event</Button>}
+                />
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {events.map((event) => (
+                <Card key={event.id} className="hover:shadow-md transition-shadow">
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <CardTitle className="text-lg line-clamp-2">{event.title}</CardTitle>
+                      <Badge className={getStatusColor(event.status)}>
+                        {event.status.replace('_', ' ').charAt(0).toUpperCase() + event.status.replace('_', ' ').slice(1)}
+                      </Badge>
+                    </div>
+                    <CardDescription>
+                      {event.university_details?.name}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <p className="text-sm text-gray-600 line-clamp-2">
+                      {event.description}
+                    </p>
+                    
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Calendar className="h-4 w-4" />
+                        {formatDateTime(event.start_datetime).date}
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Clock className="h-4 w-4" />
+                        {formatDateTime(event.start_datetime).time} - {formatDateTime(event.end_datetime).time}
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <MapPin className="h-4 w-4" />
+                        {event.location}
+                      </div>
+                    </div>
+
+                    {event.batch_details && (
+                      <div className="text-sm text-gray-600">
+                        Batch: {event.batch_details.name}
+                      </div>
+                    )}
+
+                    <div className="pt-2">
+                      <Link href={`/events/${event.id}`}>
+                        <Button variant="outline" size="sm" className="w-full">
+                          View Details
+                        </Button>
+                      </Link>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   )
 } 

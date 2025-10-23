@@ -223,19 +223,6 @@ export function EventDetails({ initialEvent }: EventDetailsProps) {
                 <span className="font-medium">Integration Status:</span>
                 <Badge variant="outline">{event.integration_status}</Badge>
               </div>
-              {event.outlook_calendar_url && (
-                <div>
-                  <span className="font-medium">Outlook Calendar:</span>
-                  <a 
-                    href={event.outlook_calendar_url} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline ml-2"
-                  >
-                    View in Calendar
-                  </a>
-                </div>
-              )}
               {event.notion_page_url && (
                 <div>
                   <span className="font-medium">Notion Page:</span>
