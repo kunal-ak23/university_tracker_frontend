@@ -16,12 +16,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { University } from "@/types/university"
 import { Stream } from "@/types/stream"
 import { getUniversities, getUniversityStreams } from "@/service/api/universities"
+import { getOEMPrograms } from "@/service/api/oems"
 import { cn } from "@/service/utils"
 import { Batch } from "@/types/batch"
 
 const batchFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
   university: z.string().min(1, "University is required"),
+  program: z.string().min(1, "Program is required"),
   stream: z.string().min(1, "Stream is required"),
   number_of_students: z.string()
     .min(1, "Number of students is required"),
@@ -74,18 +76,22 @@ export function BatchForm({ mode = 'create', batch }: BatchFormProps) {
     fetchData()
   }, [toast])
 
-  // Load initial streams if editing a batch
+  // Load initial streams and programs if editing a batch
   useEffect(() => {
     if (mode === 'edit' && batch?.university) {
       const universityId = typeof batch.university === 'object' ? batch.university.id : batch.university
       const university = universities.find(u => u.id.toString() === universityId.toString())
       if (university) {
         setSelectedUniversity(university)
-        // Load streams for the university
-        getUniversityStreams(university.id.toString()).then(streamsData => {
+        // Load streams and programs for the university
+        Promise.all([
+          getUniversityStreams(university.id.toString()),
+          getOEMPrograms(university.id.toString())
+        ]).then(([streamsData, programsData]) => {
           setStreams(streamsData.results)
+          setPrograms(programsData.results)
         }).catch(error => {
-          console.error('Failed to load streams:', error)
+          console.error('Failed to load data:', error)
         })
       }
     }
@@ -96,6 +102,7 @@ export function BatchForm({ mode = 'create', batch }: BatchFormProps) {
     defaultValues: {
       name: batch?.name ?? "",
       university: (batch?.university && typeof batch.university === 'object' ? batch.university.id : batch?.university)?.toString() ?? "",
+      program: batch?.program?.toString() ?? "",
       stream: (batch?.stream && typeof batch.stream === 'object' ? batch.stream.id : batch?.stream)?.toString() ?? "",
       number_of_students: batch?.number_of_students?.toString() ?? "",
       start_year: batch?.start_year?.toString() ?? new Date().getFullYear().toString(),
@@ -138,10 +145,15 @@ export function BatchForm({ mode = 'create', batch }: BatchFormProps) {
           const selectedUniversity = universities.find(u => u.id.toString() === value.university)
           if (selectedUniversity) {
             setSelectedUniversity(selectedUniversity)
-            const universityStreams = await getUniversityStreams(selectedUniversity.id.toString())
+            const [universityStreams, universityPrograms] = await Promise.all([
+              getUniversityStreams(selectedUniversity.id.toString()),
+              getOEMPrograms(selectedUniversity.id.toString())
+            ])
             setStreams(universityStreams.results)
-            // Reset stream when university changes
+            setPrograms(universityPrograms.results)
+            // Reset stream and program when university changes
             form.setValue('stream', '')
+            form.setValue('program', '')
           }
         } catch (error) {
           console.error('Failed to update streams:', error)
@@ -162,17 +174,19 @@ export function BatchForm({ mode = 'create', batch }: BatchFormProps) {
     oem_transfer_price: "0.00", 
     tax_rate: "0.00"
   })
+  const [programs, setPrograms] = useState<Array<{ id: string; name: string }>>([])
 
-  // Fetch pricing when university, stream, or start year changes
+  // Fetch pricing when university, program, stream, or start year changes
   useEffect(() => {
     const fetchPricing = async () => {
       const university = form.watch('university')
+      const program = form.watch('program')
       const stream = form.watch('stream')
       const startYear = form.watch('start_year')
       
-      if (university && stream && startYear) {
+      if (university && program && stream && startYear) {
         try {
-          const data = await getContractPricing(university, stream, startYear)
+          const data = await getContractPricing(university, program, stream, startYear)
           setEffectivePricing({
             cost_per_student: data.cost_per_student || "0.00",
             oem_transfer_price: data.oem_transfer_price || "0.00",
@@ -189,9 +203,9 @@ export function BatchForm({ mode = 'create', batch }: BatchFormProps) {
         })
       }
     }
-    
+
     fetchPricing()
-  }, [form.watch('university'), form.watch('stream'), form.watch('start_year')])
+  }, [form.watch('university'), form.watch('program'), form.watch('stream'), form.watch('start_year')])
 
   async function onSubmit(data: BatchFormValues) {
     try {
@@ -276,6 +290,38 @@ export function BatchForm({ mode = 'create', batch }: BatchFormProps) {
                         value={university.id.toString()}
                       >
                         {university.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="program"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Program</FormLabel>
+                <Select 
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                  disabled={!selectedUniversity}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder={selectedUniversity ? "Select program" : "Select a university first"} />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {programs.map((program) => (
+                      <SelectItem 
+                        key={program.id} 
+                        value={program.id.toString()}
+                      >
+                        {program.name}
                       </SelectItem>
                     ))}
                   </SelectContent>

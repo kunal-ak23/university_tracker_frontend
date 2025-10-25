@@ -28,6 +28,13 @@ export async function getContract(id: string): Promise<Contract> {
 }
 
 export async function updateContract(id: string, formData: FormData): Promise<Contract> {
+  console.log('🔧 Frontend: updateContract called with ID:', id)
+  console.log('🔧 Frontend: FormData keys:', Array.from(formData.keys()))
+  console.log('🔧 Frontend: FormData entries:')
+  for (const [key, value] of formData.entries()) {
+    console.log(`🔧 Frontend: ${key}:`, value)
+  }
+  
   return postFormData( `/contracts/${id}/`, formData, {
     method: 'PATCH'
   })
@@ -57,13 +64,14 @@ export async function archiveContract(id: string): Promise<Contract> {
   return postFormData(`/contracts/${id}/`,formData,{method: 'PATCH',});
 }
 
-export async function getContractPricing(university: string, stream: string, year: string): Promise<{
+export async function getContractPricing(university: string, program: string, stream: string, year: string): Promise<{
   cost_per_student: string;
   oem_transfer_price: string;
   tax_rate: string;
 }> {
   const searchParams = new URLSearchParams({
     university,
+    program,
     stream,
     year
   });

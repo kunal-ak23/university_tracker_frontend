@@ -101,31 +101,89 @@ params: Promise<{ id: string }>;
         )}
 
         {contract.stream_pricing && contract.stream_pricing?.length > 0 && (
-          <div className="col-span-2 rounded-lg border p-6 space-y-4">
+          <div className="col-span-2 rounded-lg border p-6 space-y-6">
             <h3 className="text-xl font-semibold">Stream Pricing</h3>
-            <div className="grid gap-4">
-              {contract.stream_pricing.map((pricing, index) => (
-                <div key={"pricing" + index} className="rounded border p-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-medium">{pricing.stream.name}</h4>
-                      <p className="text-sm text-muted-foreground">Year: {pricing.year}</p>
-                    </div>
-                    <div className="text-right space-y-1">
-                      <div className="text-sm">
-                        <span className="font-medium">Cost/Student:</span> {formatCurrency(parseFloat(pricing.cost_per_student))}
-                      </div>
-                      <div className="text-sm">
-                        <span className="font-medium">Transfer Price:</span> {formatCurrency(parseFloat(pricing.oem_transfer_price))}
-                      </div>
-                      <div className="text-sm">
-                        <span className="font-medium">Tax Rate:</span> {pricing.tax_rate?.rate}%
-                      </div>
-                    </div>
+            
+            {/* Group pricing by program */}
+            {(() => {
+              // Group pricing by program
+              const groupedPricing = contract.stream_pricing.reduce((acc, pricing) => {
+                const programId = pricing.program.id;
+                if (!acc[programId]) {
+                  acc[programId] = {
+                    program: pricing.program,
+                    streams: {}
+                  };
+                }
+                if (!acc[programId].streams[pricing.stream.id]) {
+                  acc[programId].streams[pricing.stream.id] = {
+                    stream: pricing.stream,
+                    years: {}
+                  };
+                }
+                acc[programId].streams[pricing.stream.id].years[pricing.year] = pricing;
+                return acc;
+              }, {} as any);
+
+              return Object.values(groupedPricing).map((programData: any) => (
+                <div key={programData.program.id} className="border rounded-lg overflow-hidden">
+                  {/* Program Header */}
+                  <div className="bg-muted px-4 py-3 border-b">
+                    <h4 className="font-semibold text-lg">{programData.program.name}</h4>
+                    <p className="text-sm text-muted-foreground">Program pricing across streams and years</p>
+                  </div>
+                  
+                  {/* Streams Table for this Program */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b bg-muted/50">
+                          <th className="text-left p-3 font-medium">Stream</th>
+                          <th className="text-center p-3 font-medium">Year</th>
+                          <th className="text-right p-3 font-medium">Cost/Student</th>
+                          <th className="text-right p-3 font-medium">Transfer Price</th>
+                          <th className="text-center p-3 font-medium">Tax Rate</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Object.values(programData.streams).map((streamData: any) => 
+                          Object.values(streamData.years).map((pricing: any) => (
+                            <tr key={`${pricing.program.id}-${pricing.stream.id}-${pricing.year}`} className="border-b hover:bg-muted/30">
+                              <td className="p-3">
+                                <div>
+                                  <div className="font-medium">{pricing.stream.name}</div>
+                                  <div className="text-sm text-muted-foreground">
+                                    {pricing.stream.duration} {pricing.stream.duration_unit}
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="p-3 text-center">
+                                <span className="font-medium">{pricing.year}</span>
+                              </td>
+                              <td className="p-3 text-right">
+                                <span className="font-medium text-green-600">
+                                  {formatCurrency(parseFloat(pricing.cost_per_student))}
+                                </span>
+                              </td>
+                              <td className="p-3 text-right">
+                                <span className="font-medium text-blue-600">
+                                  {formatCurrency(parseFloat(pricing.oem_transfer_price))}
+                                </span>
+                              </td>
+                              <td className="p-3 text-center">
+                                <span className="px-2 py-1 bg-muted rounded text-sm">
+                                  {pricing.tax_rate?.rate}%
+                                </span>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
-              ))}
-            </div>
+              ));
+            })()}
           </div>
         )}
 

@@ -23,6 +23,7 @@ export interface Batch {
   name: string
   status: string
   university: University | number | null
+  program: number | null
   stream: Stream | number | null
   contract: Contract | number
   number_of_students: number

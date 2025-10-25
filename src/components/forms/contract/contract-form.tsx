@@ -32,6 +32,7 @@ const contractFormSchema = z.object({
   programs: z.array(z.union([z.string(), z.number()])).transform(arr => arr.map(val => val.toString())),
   streams: z.array(z.union([z.string(), z.number()])).transform(arr => arr.map(val => val.toString())).optional(),
   stream_pricing: z.array(z.object({
+    program_id: z.string(),
     stream_id: z.string(),
     year: z.number(),
     cost_per_student: z.string(),
@@ -68,6 +69,7 @@ export function ContractForm({ mode = 'create', contract, preSelectedUniversity 
   const [taxRates, setTaxRates] = useState<TaxRate[]>([])
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [streamPricing, setStreamPricing] = useState<Array<{
+    program_id: string
     stream_id: string
     year: number
     cost_per_student: string
@@ -75,16 +77,16 @@ export function ContractForm({ mode = 'create', contract, preSelectedUniversity 
     tax_rate_id: string
   }>>([])
   const [isPricingInitialized, setIsPricingInitialized] = useState(false)
+  const [showPricingMatrix, setShowPricingMatrix] = useState(false)
 
-  // Debug wrapper for setStreamPricing
   const handleStreamPricingChange = (newPricing: Array<{
+    program_id: string
     stream_id: string
     year: number
     cost_per_student: string
     oem_transfer_price: string
     tax_rate_id: string
   }>) => {
-    console.log('ContractForm: setStreamPricing called with:', newPricing)
     setStreamPricing(newPricing)
     setIsPricingInitialized(true) // Mark as initialized after user changes
   }
@@ -103,6 +105,7 @@ export function ContractForm({ mode = 'create', contract, preSelectedUniversity 
       programs: contract?.programs?.map(cp => cp.id.toString()) ?? [],
       streams: contract?.stream_pricing?.map(sp => sp.stream.id.toString()).filter((id, index, self) => self.indexOf(id) === index) ?? [],
       stream_pricing: contract?.stream_pricing?.map(sp => ({
+        program_id: sp.program.id.toString(),
         stream_id: sp.stream.id.toString(),
         year: sp.year,
         cost_per_student: sp.cost_per_student,
@@ -111,6 +114,21 @@ export function ContractForm({ mode = 'create', contract, preSelectedUniversity 
       })) ?? [],
     },
   })
+
+  // Update form's stream_pricing field when streamPricing state changes
+  useEffect(() => {
+    if (streamPricing.length > 0) {
+      // Convert program_id to string to match form schema
+      const formattedPricing = streamPricing.map(pricing => ({
+        ...pricing,
+        program_id: pricing.program_id.toString(),
+        stream_id: pricing.stream_id.toString(),
+        tax_rate_id: pricing.tax_rate_id.toString(),
+      }))
+      form.setValue('stream_pricing', formattedPricing)
+    }
+  }, [streamPricing, form])
+  
 
   // Fetch universities and OEMs on mount
   useEffect(() => {
@@ -140,6 +158,7 @@ export function ContractForm({ mode = 'create', contract, preSelectedUniversity 
 
   // Initialize selected values for edit mode
   useEffect(() => {
+    
     async function initializeEditMode() {
       if (mode === 'edit' && contract) {
         try {
@@ -157,7 +176,9 @@ export function ContractForm({ mode = 'create', contract, preSelectedUniversity 
 
           // Initialize stream pricing data only if not already initialized
           if (contract.stream_pricing && !isPricingInitialized) {
+            
             const pricingData = contract.stream_pricing.map(sp => ({
+              program_id: sp.program.id.toString(),
               stream_id: sp.stream.id.toString(),
               year: sp.year,
               cost_per_student: sp.cost_per_student,
@@ -166,10 +187,30 @@ export function ContractForm({ mode = 'create', contract, preSelectedUniversity 
             }))
             setStreamPricing(pricingData)
             setIsPricingInitialized(true)
+            setShowPricingMatrix(true) // Show pricing matrix in edit mode
             
             // Initialize streams field from stream pricing data (deduplicated)
             const streamIds = contract.stream_pricing.map(sp => sp.stream.id.toString()).filter((id, index, self) => self.indexOf(id) === index)
             form.setValue('streams', streamIds)
+            
+            // Filter programs and streams to only show those in the contract
+            const contractPrograms = contract.stream_pricing.map(sp => ({
+              id: sp.program.id.toString(),
+              name: sp.program.name
+            })).filter((program, index, self) => 
+              self.findIndex(p => p.id === program.id) === index
+            )
+            
+            const contractStreams = contract.stream_pricing.map(sp => ({
+              id: sp.stream.id.toString(),
+              name: sp.stream.name
+            })).filter((stream, index, self) => 
+              self.findIndex(s => s.id === stream.id) === index
+            )
+            
+            // Set the filtered programs and streams for the pricing matrix
+            setAvailablePrograms(contractPrograms)
+            setAvailableStreams(contractStreams)
           }
         } catch (error) {
           console.error('Failed to initialize edit mode:', error)
@@ -188,7 +229,10 @@ export function ContractForm({ mode = 'create', contract, preSelectedUniversity 
   // Reset pricing initialization when switching modes
   useEffect(() => {
     setIsPricingInitialized(false)
-  }, [mode])
+    if (mode === 'edit' && contract?.stream_pricing && contract.stream_pricing.length > 0) {
+      setShowPricingMatrix(true)
+    }
+  }, [mode, contract])
 
   // Load streams when university is pre-selected
   useEffect(() => {
@@ -203,7 +247,11 @@ export function ContractForm({ mode = 'create', contract, preSelectedUniversity 
       const streams = await getUniversityStreams(universityId)
       // @ts-ignore
       setAvailableStreams(streams.results)
-      form.setValue('streams', [])
+      
+      // Only reset streams if we're in create mode or if we don't have existing pricing data
+      if (mode === 'create' || !isPricingInitialized) {
+        form.setValue('streams', [])
+      }
     } catch (error) {
       console.error('Failed to fetch university streams:', error)
       toast({
@@ -218,8 +266,12 @@ export function ContractForm({ mode = 'create', contract, preSelectedUniversity 
   const onOEMChange = async (oemId: string) => {
     try {
       const programs = await getOEMPrograms(oemId)
-      setAvailablePrograms(programs.results)
-      form.setValue('programs', [])
+      
+      // In edit mode, only update if we don't have existing pricing data
+      if (mode === 'create' || !isPricingInitialized) {
+        setAvailablePrograms(programs.results)
+        form.setValue('programs', [])
+      }
     } catch (error) {
       console.error('Failed to fetch OEM programs:', error)
       toast({
@@ -259,7 +311,8 @@ export function ContractForm({ mode = 'create', contract, preSelectedUniversity 
           return val !== contract?.[key]?.toString()
         })
 
-        setIsDirty(hasFormChanged || hasFileChanges)
+        const newIsDirty = hasFormChanged || hasFileChanges
+        setIsDirty(newIsDirty)
       })
 
       return () => subscription.unsubscribe()
@@ -312,8 +365,8 @@ export function ContractForm({ mode = 'create', contract, preSelectedUniversity 
       })
 
       // Add stream pricing data
-      console.log('ContractForm: Submitting streamPricing data:', streamPricing)
       streamPricing.forEach((pricing, index) => {
+        formData.append(`stream_pricing[${index}][program_id]`, pricing.program_id)
         formData.append(`stream_pricing[${index}][stream_id]`, pricing.stream_id)
         formData.append(`stream_pricing[${index}][year]`, pricing.year.toString())
         formData.append(`stream_pricing[${index}][cost_per_student]`, pricing.cost_per_student)
@@ -583,19 +636,6 @@ export function ContractForm({ mode = 'create', contract, preSelectedUniversity 
             />
           </div>
 
-          {/* Pricing Matrix */}
-          {form.getValues("university") && form.getValues("start_year") && form.getValues("end_year") && availableStreams.length > 0 && (
-            <div className="col-span-2">
-              <PricingMatrix
-                streams={availableStreams}
-                taxRates={taxRates}
-                startYear={parseInt(form.getValues("start_year"))}
-                endYear={parseInt(form.getValues("end_year"))}
-                pricing={streamPricing}
-                onPricingChange={handleStreamPricingChange}
-              />
-            </div>
-          )}
 
           <FormField
             control={form.control}
@@ -670,6 +710,77 @@ export function ContractForm({ mode = 'create', contract, preSelectedUniversity 
           />
 
         </div>
+
+        {/* Pricing Matrix - Positioned after end year */}
+        {form.getValues("university") && form.getValues("start_year") && form.getValues("end_year") && availableStreams.length > 0 && (
+          <div className="col-span-2">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium">Pricing Configuration</h3>
+                {!showPricingMatrix && mode === 'create' && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowPricingMatrix(true)}
+                  >
+                    Configure Pricing
+                  </Button>
+                )}
+              </div>
+              {showPricingMatrix && (() => {
+                // In edit mode, use the contract-specific programs and streams
+                // In create mode, filter based on form selections
+                let selectedPrograms, selectedStreams
+                
+                if (mode === 'edit' && contract?.stream_pricing) {
+                  // Use contract-specific programs and streams
+                  selectedPrograms = contract.stream_pricing.map(sp => ({
+                    id: sp.program.id.toString(),
+                    name: sp.program.name
+                  })).filter((program, index, self) => 
+                    self.findIndex(p => p.id === program.id) === index
+                  )
+                  
+                  selectedStreams = contract.stream_pricing.map(sp => ({
+                    id: sp.stream.id.toString(),
+                    name: sp.stream.name
+                  })).filter((stream, index, self) => 
+                    self.findIndex(s => s.id === stream.id) === index
+                  )
+                } else {
+                  // Filter based on form selections (create mode)
+                  selectedPrograms = form.getValues("programs") ? 
+                    availablePrograms.filter(p => {
+                      const formPrograms = form.getValues("programs").map(id => parseInt(id))
+                      return formPrograms.includes(p.id)
+                    }) : 
+                    availablePrograms
+                  selectedStreams = form.getValues("streams") ? 
+                    availableStreams.filter(s => {
+                      const formStreams = form.getValues("streams").map(id => parseInt(id))
+                      return formStreams.includes(s.id)
+                    }) : 
+                    availableStreams
+                }
+                
+                const startYear = parseInt(form.getValues("start_year"))
+                const endYear = parseInt(form.getValues("end_year"))
+                
+                return (
+                  <PricingMatrix
+                    programs={selectedPrograms}
+                    streams={selectedStreams}
+                    taxRates={taxRates}
+                    startYear={startYear}
+                    endYear={endYear}
+                    pricing={streamPricing}
+                    onPricingChange={handleStreamPricingChange}
+                  />
+                )
+              })()}
+            </div>
+          </div>
+        )}
 
 
         <div className="space-y-4">
