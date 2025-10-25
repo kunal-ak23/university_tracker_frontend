@@ -14,7 +14,12 @@ interface BatchesListProps {
 
 export default function BatchesList({ initialBatches, streamId }: BatchesListProps) {
   const router = useRouter()
-  const [batches] = useState<Batch[]>(initialBatches)
+  const [batches, setBatches] = useState<Batch[]>(initialBatches)
+
+  const handleDelete = (batchId: number) => {
+    // Remove the deleted batch from the local state
+    setBatches(prevBatches => prevBatches.filter(batch => batch.id !== batchId))
+  }
 
   return (
     <div className="space-y-6">
@@ -25,7 +30,7 @@ export default function BatchesList({ initialBatches, streamId }: BatchesListPro
           Add Batch
         </Button>
       </div>
-      <BatchesTable batches={batches} streamId={streamId} />
+      <BatchesTable batches={batches} streamId={streamId} onDelete={handleDelete} />
     </div>
   )
 } 

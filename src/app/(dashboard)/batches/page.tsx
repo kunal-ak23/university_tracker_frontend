@@ -14,45 +14,50 @@ export default function BatchesPage() {
   const [loading, setLoading] = useState(true)
   const searchParams = useSearchParams()
 
-  useEffect(() => {
-    const fetchBatches = async () => {
-      try {
-        setLoading(true)
-        // Construct query string from search params
-        const queryParams = new URLSearchParams()
-        
-        // Add search parameter if exists
-        const search = searchParams.get('search')
-        if (search) {
-          queryParams.set('search', search)
-        }
-
-        // Add ordering parameter if exists
-        const ordering = searchParams.get('ordering')
-        if (ordering) {
-          queryParams.set('ordering', ordering)
-        }
-
-        // Add page parameter if exists
-        const page = searchParams.get('page')
-        if (page) {
-          queryParams.set('page', page)
-        }
-
-        const queryString = queryParams.toString()
-        const url = queryString ? `/batches/?${queryString}` : '/batches/'
-        
-        const response = await getBatches(url)
-        setBatches(response.results)
-      } catch (error) {
-        console.error('Failed to fetch batches:', error)
-      } finally {
-        setLoading(false)
+  const fetchBatches = async () => {
+    try {
+      setLoading(true)
+      // Construct query string from search params
+      const queryParams = new URLSearchParams()
+      
+      // Add search parameter if exists
+      const search = searchParams.get('search')
+      if (search) {
+        queryParams.set('search', search)
       }
-    }
 
+      // Add ordering parameter if exists
+      const ordering = searchParams.get('ordering')
+      if (ordering) {
+        queryParams.set('ordering', ordering)
+      }
+
+      // Add page parameter if exists
+      const page = searchParams.get('page')
+      if (page) {
+        queryParams.set('page', page)
+      }
+
+      const queryString = queryParams.toString()
+      const url = queryString ? `/batches/?${queryString}` : '/batches/'
+      
+      const response = await getBatches(url)
+      setBatches(response.results)
+    } catch (error) {
+      console.error('Failed to fetch batches:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
     fetchBatches()
   }, [searchParams]) // Re-fetch when search params change
+
+  const handleDelete = (batchId: number) => {
+    // Remove the deleted batch from the local state
+    setBatches(prevBatches => prevBatches.filter(batch => batch.id !== batchId))
+  }
 
   if (loading) {
     return <div>Loading...</div>
@@ -69,7 +74,7 @@ export default function BatchesPage() {
           </Button>
         </Link>
       </div>
-      <BatchesTable batches={batches} />
+      <BatchesTable batches={batches} onDelete={handleDelete} />
     </div>
   )
 } 

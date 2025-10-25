@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge"
 import { formatDate } from "@/service/utils"
 import { Batch } from "@/types/batch"
 import { ColumnDef, Row } from "@tanstack/react-table"
+import { deleteBatch } from "@/service/api/batches"
+import { useRouter } from "next/navigation"
 
 interface BatchesTableProps {
   batches: Batch[]
@@ -22,6 +24,7 @@ interface BatchesTableProps {
   sortDirection?: 'asc' | 'desc'
   hasNextPage?: boolean
   hasPreviousPage?: boolean
+  onDelete?: (batchId: number) => void
 }
 
 export function BatchesTable({ 
@@ -29,8 +32,28 @@ export function BatchesTable({
   totalPages,
   hasNextPage,
   hasPreviousPage,
+  onDelete,
 }: BatchesTableProps) {
   const { toast } = useToast()
+  const router = useRouter()
+
+  const handleDelete = async (batchId: number) => {
+    try {
+      await deleteBatch(batchId.toString())
+      toast({
+        title: "Success",
+        description: "Batch deleted successfully",
+      })
+      onDelete?.(batchId)
+    } catch (error) {
+      console.error("Failed to delete batch:", error)
+      toast({
+        title: "Error",
+        description: "Failed to delete batch",
+        variant: "destructive",
+      })
+    }
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -91,13 +114,7 @@ export function BatchesTable({
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => {
-              toast({
-                title: "Error",
-                description: "Delete functionality is not implemented",
-                variant: "destructive",
-              })
-            }}
+            onClick={() => handleDelete(row.original.id)}
           >
             <Trash2 className="h-4 w-4 text-destructive" />
           </Button>

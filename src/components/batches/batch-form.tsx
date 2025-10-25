@@ -17,6 +17,7 @@ import { University } from "@/types/university"
 import { Stream } from "@/types/stream"
 import { getUniversities, getUniversityStreams } from "@/service/api/universities"
 import { getOEMPrograms } from "@/service/api/oems"
+import { getStreamsWithContracts, getProgramsWithContracts } from "@/service/api/batches"
 import { cn } from "@/service/utils"
 import { Batch } from "@/types/batch"
 
@@ -78,18 +79,18 @@ export function BatchForm({ mode = 'create', batch }: BatchFormProps) {
 
   // Load initial streams and programs if editing a batch
   useEffect(() => {
-    if (mode === 'edit' && batch?.university) {
+    if (mode === 'edit' && batch?.university && batch?.start_year) {
       const universityId = typeof batch.university === 'object' ? batch.university.id : batch.university
       const university = universities.find(u => u.id.toString() === universityId.toString())
       if (university) {
         setSelectedUniversity(university)
-        // Load streams and programs for the university
+        // Load streams and programs that have contracts for this university and year
         Promise.all([
-          getUniversityStreams(university.id.toString()),
-          getOEMPrograms(university.id.toString())
+          getStreamsWithContracts(university.id.toString(), batch.start_year.toString()),
+          getProgramsWithContracts(university.id.toString(), batch.start_year.toString())
         ]).then(([streamsData, programsData]) => {
-          setStreams(streamsData.results)
-          setPrograms(programsData.results)
+          setStreams(streamsData)
+          setPrograms(programsData)
         }).catch(error => {
           console.error('Failed to load data:', error)
         })
@@ -102,7 +103,7 @@ export function BatchForm({ mode = 'create', batch }: BatchFormProps) {
     defaultValues: {
       name: batch?.name ?? "",
       university: (batch?.university && typeof batch.university === 'object' ? batch.university.id : batch?.university)?.toString() ?? "",
-      program: batch?.program?.toString() ?? "",
+      program: (batch?.program && typeof batch.program === 'object' ? batch.program.id : batch?.program)?.toString() ?? "",
       stream: (batch?.stream && typeof batch.stream === 'object' ? batch.stream.id : batch?.stream)?.toString() ?? "",
       number_of_students: batch?.number_of_students?.toString() ?? "",
       start_year: batch?.start_year?.toString() ?? new Date().getFullYear().toString(),
@@ -137,29 +138,29 @@ export function BatchForm({ mode = 'create', batch }: BatchFormProps) {
     return changes.length > 0
   }
 
-  // Update streams when university changes
+  // Update streams and programs when university or year changes
   useEffect(() => {
     const subscription = form.watch(async (value, { name }) => {
-      if (name === 'university' && value.university) {
+      if ((name === 'university' || name === 'start_year') && value.university && value.start_year) {
         try {
           const selectedUniversity = universities.find(u => u.id.toString() === value.university)
           if (selectedUniversity) {
             setSelectedUniversity(selectedUniversity)
-            const [universityStreams, universityPrograms] = await Promise.all([
-              getUniversityStreams(selectedUniversity.id.toString()),
-              getOEMPrograms(selectedUniversity.id.toString())
+            const [streamsWithContracts, programsWithContracts] = await Promise.all([
+              getStreamsWithContracts(selectedUniversity.id.toString(), value.start_year),
+              getProgramsWithContracts(selectedUniversity.id.toString(), value.start_year)
             ])
-            setStreams(universityStreams.results)
-            setPrograms(universityPrograms.results)
-            // Reset stream and program when university changes
+            setStreams(streamsWithContracts)
+            setPrograms(programsWithContracts)
+            // Reset stream and program when university or year changes
             form.setValue('stream', '')
             form.setValue('program', '')
           }
         } catch (error) {
-          console.error('Failed to update streams:', error)
+          console.error('Failed to update streams and programs:', error)
           toast({
             title: "Error",
-            description: "Failed to load streams for the selected university",
+            description: "Failed to load streams and programs for the selected university and year",
             variant: "destructive",
           })
         }
