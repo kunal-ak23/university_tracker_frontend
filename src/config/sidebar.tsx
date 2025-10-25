@@ -11,6 +11,7 @@ import {
   BarChart3,
   Settings,
   Calendar,
+  Calculator,
 } from "lucide-react"
 import { LucideIcon } from "lucide-react"
 
@@ -153,6 +154,12 @@ export const sidebarConfig: SidebarSection[] = [
         href: "/expenses",
         icon: BarChart3,
         roles: ["admin", "university_poc", "staff"],
+      },
+      {
+        title: "Ledger",
+        href: "/ledger",
+        icon: Calculator,
+        roles: ["admin"],
       }
     ],
   },
