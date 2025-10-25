@@ -9,18 +9,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Calendar } from "lucide-react"
 import { University } from "@/types/university"
-import { LedgerFilters } from "@/types/ledger"
+import { LedgerFilters as LedgerFiltersType } from "@/types/ledger"
 
 interface LedgerFiltersProps {
   universities: University[]
-  initialFilters: LedgerFilters
+  initialFilters: LedgerFiltersType
 }
 
 export function LedgerFilters({ universities, initialFilters }: LedgerFiltersProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   
-  const [filters, setFilters] = useState<LedgerFilters>({
+  const [filters, setFilters] = useState<LedgerFiltersType>({
     university: initialFilters.university || 'all',
     start_date: initialFilters.start_date || '',
     end_date: initialFilters.end_date || '',
@@ -28,7 +28,7 @@ export function LedgerFilters({ universities, initialFilters }: LedgerFiltersPro
     search: initialFilters.search || ''
   })
 
-  const handleFilterChange = (key: keyof LedgerFilters, value: string) => {
+  const handleFilterChange = (key: keyof LedgerFiltersType, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }))
   }
 

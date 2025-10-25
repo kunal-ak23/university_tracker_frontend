@@ -27,7 +27,7 @@ export default async function EditBatchPage({ params }: EditBatchPageProps) {
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">Edit Batch</h2>
       </div>
-      <BatchForm mode="edit" batch={batch} streamId={id} />
+      <BatchForm mode="edit" batch={batch} />
     </div>
   )
 } 

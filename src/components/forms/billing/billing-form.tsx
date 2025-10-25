@@ -93,11 +93,14 @@ export function BillingForm({ mode = 'create', billing, availableBatches }: Bill
     const year = form.watch('year')
     
     if (university && year) {
-      const filtered = availableBatches.filter(batch => 
-        batch.university?.id?.toString() === university && 
-        batch.start_year <= parseInt(year) && 
-        batch.end_year >= parseInt(year)
-      )
+      const filtered = availableBatches.filter(batch => {
+        const universityId = typeof batch.university === 'object' 
+          ? batch.university?.id?.toString() 
+          : batch.university?.toString()
+        return universityId === university && 
+               batch.start_year <= parseInt(year) && 
+               batch.end_year >= parseInt(year)
+      })
       setFilteredBatches(filtered)
       
       // Auto-select all filtered batches when university or year changes
@@ -290,7 +293,7 @@ export function BillingForm({ mode = 'create', billing, availableBatches }: Bill
               <FormControl>
                 <MultiSelect
                   options={filteredBatches.map(batch => ({
-                    label: `${batch.name} (${batch.stream?.name || 'Unknown Stream'})`,
+                    label: `${batch.name} (${typeof batch.stream === 'object' ? batch.stream?.name || 'Unknown Stream' : 'Unknown Stream'})`,
                     value: batch.id.toString()
                   }))}
                   value={selectedBatches}

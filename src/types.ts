@@ -64,18 +64,33 @@ export interface University {
   version: number;
 }
 
+export interface ContractStreamPricing {
+  id: number;
+  program: Program;
+  program_id: number;
+  stream: Stream;
+  stream_id: number;
+  year: number;
+  cost_per_student: string;
+  oem_transfer_price: string;
+  tax_rate: TaxRate;
+  tax_rate_id: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Contract {
   id: number;
   name: string;
-  cost_per_student: string;
-  oem_transfer_price: string;
-  start_date: string;
-  end_date: string;
+  start_year: number;
+  end_year: number;
+  start_date: string | null;
+  end_date: string | null;
   status: string;
   notes: string | null;
-  tax_rate: TaxRate;
   contract_programs: any[];
   contract_files: ContractFile[];
+  stream_pricing: ContractStreamPricing[];
   streams: Stream[];
   oem: OEM;
   university: University;

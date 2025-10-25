@@ -84,11 +84,8 @@ export default function UserForm({ user, open, onOpenChange, onSuccess }: UserFo
       
       if (user) {
         // Update existing user
-        const updateData = { ...formData }
-        if (!updateData.password) {
-          delete updateData.password
-        }
-        await updateUser(user.id, updateData)
+        const { password, ...updateData } = formData
+        await updateUser(user.id, updateData as Partial<UserFormData>)
         toast({
           title: "Success",
           description: "User updated successfully",

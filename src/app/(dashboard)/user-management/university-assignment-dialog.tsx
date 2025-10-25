@@ -28,7 +28,7 @@ export default function UniversityAssignmentDialog({
   onSuccess
 }: UniversityAssignmentDialogProps) {
   const [universities, setUniversities] = useState<University[]>([])
-  const [assignedUniversities, setAssignedUniversities] = useState<number[]>([])
+  const [assignedUniversities, setAssignedUniversities] = useState<string[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -51,7 +51,7 @@ export default function UniversityAssignmentDialog({
       ])
       
       setUniversities(universitiesData.results)
-      setAssignedUniversities(assignedData.map(assignment => assignment.university))
+      setAssignedUniversities(assignedData.map(assignment => assignment.university.toString()))
     } catch (error) {
       toast({
         title: "Error",
@@ -63,7 +63,7 @@ export default function UniversityAssignmentDialog({
     }
   }
 
-  const handleUniversityToggle = (universityId: number) => {
+  const handleUniversityToggle = (universityId: string) => {
     setAssignedUniversities(prev => {
       if (prev.includes(universityId)) {
         return prev.filter(id => id !== universityId)
@@ -79,7 +79,7 @@ export default function UniversityAssignmentDialog({
     try {
       setSaving(true)
       await assignUniversities(user.id, {
-        university_ids: assignedUniversities
+        university_ids: assignedUniversities.map(id => parseInt(id))
       })
       
       toast({

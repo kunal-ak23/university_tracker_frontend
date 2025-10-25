@@ -16,7 +16,7 @@ export default async function NewBatchPage({ params }: NewBatchPageProps) {
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">New Batch</h2>
       </div>
-      <BatchForm mode="create" streamId={id} />
+      <BatchForm mode="create" />
     </div>
   )
 } 

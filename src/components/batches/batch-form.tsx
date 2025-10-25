@@ -90,7 +90,10 @@ export function BatchForm({ mode = 'create', batch }: BatchFormProps) {
           getProgramsWithContracts(university.id.toString(), batch.start_year.toString())
         ]).then(([streamsData, programsData]) => {
           setStreams(streamsData)
-          setPrograms(programsData)
+          setPrograms(programsData.map(program => ({
+            id: program.id.toString(),
+            name: program.name
+          })))
         }).catch(error => {
           console.error('Failed to load data:', error)
         })
@@ -151,7 +154,10 @@ export function BatchForm({ mode = 'create', batch }: BatchFormProps) {
               getProgramsWithContracts(selectedUniversity.id.toString(), value.start_year)
             ])
             setStreams(streamsWithContracts)
-            setPrograms(programsWithContracts)
+            setPrograms(programsWithContracts.map(program => ({
+              id: program.id.toString(),
+              name: program.name
+            })))
             // Reset stream and program when university or year changes
             form.setValue('stream', '')
             form.setValue('program', '')

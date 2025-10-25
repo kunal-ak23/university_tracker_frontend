@@ -43,18 +43,33 @@ export interface University {
   address: string
 }
 
+export interface ContractStreamPricing {
+  id: number
+  program: Program
+  program_id: number
+  stream: Stream
+  stream_id: number
+  year: number
+  cost_per_student: string
+  oem_transfer_price: string
+  tax_rate: TaxRate
+  tax_rate_id: number
+  created_at: string
+  updated_at: string
+}
+
 export interface Contract {
   id: string
   name: string
-  cost_per_student: string
-  oem_transfer_price: string
+  start_year: number
+  end_year: number
   start_date: string | null
   end_date: string | null
   status: string | "planned" | "active" | "inactive" | "archived"
   notes: string | null
-  tax_rate: TaxRate
   contract_programs: ContractProgram[]
   contract_files: ContractFile[]
+  stream_pricing: ContractStreamPricing[]
   streams: Stream[]
   oem: OEM | null
   university: University | null
@@ -63,16 +78,13 @@ export interface Contract {
 
 export const contractFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  cost_per_student: z.string().min(1, "Cost per student is required"),
-  oem_transfer_price: z.string().min(1, "OEM transfer price is required"),
-  start_date: z.string().min(1, "Start date is required"),
-  end_date: z.string().min(1, "End date is required"),
+  start_year: z.number().min(2020, "Start year must be 2020 or later"),
+  end_year: z.number().min(2020, "End year must be 2020 or later"),
+  start_date: z.string().optional(),
+  end_date: z.string().optional(),
   notes: z.string().optional(),
-  status: z.enum(["planned", "active", "completed", "cancelled"], {
+  status: z.enum(["planned", "active", "inactive", "archived"], {
     required_error: "Please select a status",
-  }),
-  tax_rate: z.number({
-    required_error: "Please select a tax rate",
   }),
   oem_id: z.number(),
   university_id: z.number(),

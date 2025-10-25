@@ -15,7 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { MultiSelect } from "@/components/ui/multi-select"
 import { getUniversities, getUniversityStreams } from "@/service/api/universities"
 import { getOEMs, getOEMPrograms } from "@/service/api/oems"
-import { getTaxRates, TaxRate } from "@/service/api/tax"
+import { getTaxRates } from "@/service/api/tax"
+import { TaxRate } from "@/types"
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
 import { PricingMatrix } from "./pricing-matrix"
 import { Contract, Stream } from "@/types/contract"
@@ -69,6 +70,7 @@ export function ContractForm({ mode = 'create', contract, preSelectedUniversity 
   const [taxRates, setTaxRates] = useState<TaxRate[]>([])
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [streamPricing, setStreamPricing] = useState<Array<{
+    id: string
     program_id: string
     stream_id: string
     year: number
@@ -80,6 +82,7 @@ export function ContractForm({ mode = 'create', contract, preSelectedUniversity 
   const [showPricingMatrix, setShowPricingMatrix] = useState(false)
 
   const handleStreamPricingChange = (newPricing: Array<{
+    id: string
     program_id: string
     stream_id: string
     year: number
@@ -142,13 +145,17 @@ export function ContractForm({ mode = 'create', contract, preSelectedUniversity 
         
         setUniversities(universitiesData.results);
         setOems(oemsData.results);
-        setTaxRates(taxRatesData.results)
+        setTaxRates(taxRatesData.results.map(tax => ({
+          id: parseInt(tax.id),
+          rate: tax.rate.toString(),
+          name: tax.name,
+          description: '',
+          created_at: '',
+          updated_at: '',
+          version: 0
+        })))
 
-        // Set default tax rate (rate 18)
-        const defaultTaxRate = taxRates.find(tax => tax.rate === 18)
-        if (defaultTaxRate && !contract) {  // Only set default for new contracts
-          form.setValue('tax_rate', defaultTaxRate.id.toString())
-        }
+        // Tax rates are now handled at the stream pricing level
       } catch (error) {
         console.error('Failed to fetch data:', error)
       }
@@ -178,6 +185,7 @@ export function ContractForm({ mode = 'create', contract, preSelectedUniversity 
           if (contract.stream_pricing && !isPricingInitialized) {
             
             const pricingData = contract.stream_pricing.map(sp => ({
+              id: `${sp.program.id}-${sp.stream.id}-${sp.year}-${Date.now()}`,
               program_id: sp.program.id.toString(),
               stream_id: sp.stream.id.toString(),
               year: sp.year,
@@ -304,9 +312,7 @@ export function ContractForm({ mode = 'create', contract, preSelectedUniversity 
             const originalStreams = contract?.streams?.map(s => s.id.toString()) || []
             return !areArraysEqual(currentStreams.sort(), originalStreams.sort())
           }
-          if (key === 'cost_per_student' || key === 'oem_transfer_price') {
-            return val?.toString() !== contract?.[key]?.toString()
-          }
+          // cost_per_student and oem_transfer_price are now handled at stream pricing level
           // @ts-ignore
           return val !== contract?.[key]?.toString()
         })
@@ -751,13 +757,13 @@ export function ContractForm({ mode = 'create', contract, preSelectedUniversity 
                   // Filter based on form selections (create mode)
                   selectedPrograms = form.getValues("programs") ? 
                     availablePrograms.filter(p => {
-                      const formPrograms = form.getValues("programs").map(id => parseInt(id))
+                      const formPrograms = form.getValues("programs") || []
                       return formPrograms.includes(p.id)
                     }) : 
                     availablePrograms
                   selectedStreams = form.getValues("streams") ? 
                     availableStreams.filter(s => {
-                      const formStreams = form.getValues("streams").map(id => parseInt(id))
+                      const formStreams = form.getValues("streams") || []
                       return formStreams.includes(s.id)
                     }) : 
                     availableStreams
@@ -769,7 +775,16 @@ export function ContractForm({ mode = 'create', contract, preSelectedUniversity 
                 return (
                   <PricingMatrix
                     programs={selectedPrograms}
-                    streams={selectedStreams}
+                    streams={selectedStreams.map(s => ({
+                      id: s.id,
+                      name: s.name,
+                      duration: 0,
+                      duration_unit: 'Months' as const,
+                      university: {} as any,
+                      description: '',
+                      created_at: '',
+                      updated_at: ''
+                    }))}
                     taxRates={taxRates}
                     startYear={startYear}
                     endYear={endYear}
