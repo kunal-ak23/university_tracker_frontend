@@ -25,14 +25,14 @@ import {
 function getHeaderTitle(status: string) {
   switch (status) {
     case 'draft':
-      return 'Draft Billings'
+      return 'Draft Receivables'
     case 'paid':
-      return 'Paid Billings'
+      return 'Paid Receivables'
     case 'archived':
-      return 'Archived Billings'
+      return 'Archived Receivables'
     case 'active':
     default:
-      return 'Active Billings'
+      return 'Active Receivables'
   }
 }
 
@@ -40,13 +40,13 @@ function EmptyState() {
   return (
     <div className="rounded-lg border border-dashed p-8">
       <div className="text-center">
-        <h3 className="mt-2 text-sm font-semibold text-gray-900">No billings</h3>
-        <p className="mt-1 text-sm text-gray-500">Get started by creating a new billing.</p>
+        <h3 className="mt-2 text-sm font-semibold text-gray-900">No receivables</h3>
+        <p className="mt-1 text-sm text-gray-500">Get started by creating a new receivable.</p>
         <div className="mt-6">
           <Link href="/billings/new">
             <Button>
               <Plus className="mr-2 h-4 w-4" />
-              Create Billing
+              Create Receivable
             </Button>
           </Link>
         </div>
@@ -214,7 +214,7 @@ export function BillingTabs({ defaultStatus, initialBillings }: BillingTabsProps
       <div className="relative">
         <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Search billings..."
+          placeholder="Search receivables..."
           value={searchTerm}
           onChange={handleSearch}
           className="pl-8"

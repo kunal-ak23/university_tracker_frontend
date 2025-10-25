@@ -19,6 +19,11 @@ export function PaymentList({ payments }: PaymentListProps) {
                 <Badge variant="outline">
                   {payment.payment_method}
                 </Badge>
+                {payment.university_name && (
+                  <Badge variant="secondary">
+                    {payment.university_name}
+                  </Badge>
+                )}
               </div>
               <div className="flex items-center gap-6">
                 <div className="text-right">
@@ -37,6 +42,16 @@ export function PaymentList({ payments }: PaymentListProps) {
                 <span className="ml-2">• Transaction Reference: {payment.transaction_reference}</span>
               )}
             </div>
+            {(payment.billing_details?.name || payment.invoice_details?.name) && (
+              <div className="mt-2 text-sm text-muted-foreground">
+                {payment.billing_details?.name && (
+                  <span>Receivable: {payment.billing_details.name}</span>
+                )}
+                {payment.invoice_details?.name && (
+                  <span className="ml-4">Invoice: {payment.invoice_details.name}</span>
+                )}
+              </div>
+            )}
           </div>
         </Link>
       ))}

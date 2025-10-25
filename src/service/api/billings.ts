@@ -63,38 +63,3 @@ export async function deleteBilling(id: string): Promise<void> {
   })
 }
 
-export async function createUniversityYearBilling(data: {
-  university_id: number;
-  year: number;
-  name?: string;
-  notes?: string;
-}): Promise<Billing & {
-  batches: Array<{
-    id: number;
-    name: string;
-    stream: string;
-    number_of_students: number;
-    start_year: number;
-    end_year: number;
-    cost_per_student: string;
-    oem_transfer_price: string;
-    tax_rate: string;
-  }>;
-  university: {
-    id: number;
-    name: string;
-  };
-  year: number;
-  redirect: {
-    id: number;
-    path: string;
-  };
-}> {
-  return apiFetch("/billings/create_university_year_billing/", {
-    method: "POST",
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data),
-  })
-} 

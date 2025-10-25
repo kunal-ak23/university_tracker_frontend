@@ -167,7 +167,7 @@ export function BillingForm({ mode = 'create', billing, availableBatches }: Bill
         await updateBilling(billing.id, data)
         toast({
           title: "Success",
-          description: "Billing updated successfully",
+          description: "Receivable updated successfully",
         })
         router.push('/billings')
       } else {
@@ -202,7 +202,7 @@ export function BillingForm({ mode = 'create', billing, availableBatches }: Bill
       await publishBilling(draftId)
       toast({
         title: "Success",
-        description: "Billing published successfully",
+        description: "Receivable published successfully",
       })
       router.push('/billings')
       router.refresh()
@@ -210,7 +210,7 @@ export function BillingForm({ mode = 'create', billing, availableBatches }: Bill
       console.error('Failed to publish billing:', error)
       toast({
         title: "Error",
-        description: "Failed to publish billing",
+        description: "Failed to publish receivable",
         variant: "destructive",
       })
     } finally {

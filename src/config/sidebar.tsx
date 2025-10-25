@@ -131,7 +131,7 @@ export const sidebarConfig: SidebarSection[] = [
     roles: ["admin", "staff"],
     items: [
       {
-        title: "Billings",
+        title: "Receivables",
         href: "/billings",
         icon: Receipt,
         roles: ["admin"],

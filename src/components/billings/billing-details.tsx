@@ -59,9 +59,9 @@ export function BillingDetails({ billing }: BillingDetailsProps) {
         <div className="flex gap-4">
           <BillingActions billing={billing} />
           <Link href={`/billings/${billing.id}/edit`}>
-            <Button>
+            <Button disabled={billing.status === 'active'}>
               <Pencil className="mr-2 h-4 w-4" />
-              Edit Billing
+              Edit Receivable
             </Button>
           </Link>
         </div>

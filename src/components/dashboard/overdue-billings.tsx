@@ -35,7 +35,7 @@ export function OverdueBillings() {
   if (isLoading) {
     return (
       <div className="flex h-[200px] items-center justify-center">
-        <div className="text-muted-foreground">Loading overdue billings...</div>
+        <div className="text-muted-foreground">Loading overdue receivables...</div>
       </div>
     )
   }

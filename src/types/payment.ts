@@ -1,6 +1,19 @@
 export interface Payment {
   id: number
   invoice: number
+  invoice_details?: {
+    id: number
+    name: string
+    billing_id?: number
+    billing_name?: string
+  }
+  billing_details?: {
+    id: number
+    name: string
+    university_id?: number
+    university_name?: string
+  }
+  university_name?: string
   name: string
   amount: number
   payment_date: string

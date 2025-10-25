@@ -1,5 +1,5 @@
 import { getBillings } from "@/service/api/billings"
-import { Plus, Calendar } from "lucide-react"
+import { Plus } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { BillingTabs } from "@/components/billings/billing-tabs"
@@ -7,18 +7,12 @@ import { BillingTabs } from "@/components/billings/billing-tabs"
 function BillingsHeader({ status }: { status: string }) {
   return (
     <div className="flex items-center justify-between">
-      <h2 className="text-3xl font-bold tracking-tight">Billings</h2>
+      <h2 className="text-3xl font-bold tracking-tight">Receivables</h2>
       <div className="flex gap-2">
-        <Link href="/billings/create-university-year">
-          <Button variant="outline">
-            <Calendar className="mr-2 h-4 w-4" />
-            University Year Billing
-          </Button>
-        </Link>
         <Link href="/billings/new">
           <Button>
             <Plus className="mr-2 h-4 w-4" />
-            Create Billing
+            Create Receivable
           </Button>
         </Link>
       </div>
