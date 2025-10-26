@@ -755,17 +755,14 @@ export function ContractForm({ mode = 'create', contract, preSelectedUniversity 
                   )
                 } else {
                   // Filter based on form selections (create mode)
-                  selectedPrograms = form.getValues("programs") ? 
-                    availablePrograms.filter(p => {
-                      const formPrograms = form.getValues("programs") || []
-                      return formPrograms.includes(p.id)
-                    }) : 
+                  const formProgramIds = form.getValues("programs") || []
+                  const formStreamIds = form.getValues("streams") || []
+                  
+                  selectedPrograms = formProgramIds.length > 0 ? 
+                    availablePrograms.filter(p => formProgramIds.includes(p.id.toString())) : 
                     availablePrograms
-                  selectedStreams = form.getValues("streams") ? 
-                    availableStreams.filter(s => {
-                      const formStreams = form.getValues("streams") || []
-                      return formStreams.includes(s.id)
-                    }) : 
+                  selectedStreams = formStreamIds.length > 0 ? 
+                    availableStreams.filter(s => formStreamIds.includes(s.id.toString())) : 
                     availableStreams
                 }
                 

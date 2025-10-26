@@ -43,9 +43,38 @@ export function PricingMatrix({
 }: PricingMatrixProps) {
   const { toast } = useToast()
   const [localPricing, setLocalPricing] = useState<PricingEntry[]>(pricing)
+  const [hasInitialized, setHasInitialized] = useState(false)
+
+  // Initialize pricing matrix when component first mounts if pricing is empty
+  useEffect(() => {
+    if (!hasInitialized && pricing.length === 0 && programs.length > 0 && streams.length > 0 && taxRates.length > 0) {
+      const initialPricing: PricingEntry[] = []
+      programs.forEach(program => {
+        streams.forEach(stream => {
+          for (let year = startYear; year <= endYear; year++) {
+            initialPricing.push({
+              id: `${program.id}-${stream.id.toString()}-${year}-${Date.now()}`,
+              program_id: program.id,
+              stream_id: stream.id.toString(),
+              year,
+              cost_per_student: '',
+              oem_transfer_price: '',
+              tax_rate_id: taxRates[0]?.id.toString() || ''
+            })
+          }
+        })
+      })
+      setLocalPricing(initialPricing)
+      onPricingChange(initialPricing)
+      setHasInitialized(true)
+    }
+  }, [pricing, programs, streams, taxRates, hasInitialized, startYear, endYear, onPricingChange])
 
   useEffect(() => {
-    setLocalPricing(pricing)
+    if (pricing.length > 0) {
+      setLocalPricing(pricing)
+      setHasInitialized(true)
+    }
   }, [pricing])
 
   const generateYears = () => {
