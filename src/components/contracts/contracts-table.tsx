@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { Contract } from "@/types/contract"
 import { DataTable } from "@/components/ui/data-table"
 import Link from "next/link"
@@ -11,6 +12,7 @@ import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
 import { formatDate } from "@/service/utils"
 import { ColumnDef, Row } from "@tanstack/react-table"
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
 
 interface ContractsTableProps {
   contractsData: Contract[]
@@ -31,22 +33,28 @@ export function ContractsTable({
   hasNextPage,
   hasPreviousPage,
   totalPages,
-  onPageChange,
-  onSearch,
-  onSort,
-  sortColumn,
-  sortDirection,
 }: ContractsTableProps) {
   const router = useRouter()
   const { toast } = useToast()
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [contractToDelete, setContractToDelete] = useState<string | null>(null)
 
-  const handleDelete = async (id: string) => {
+  const handleDeleteClick = (id: string) => {
+    setContractToDelete(id)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDelete = async () => {
+    if (!contractToDelete) return
+    
     try {
-      await deleteContract(id)
+      await deleteContract(contractToDelete)
       toast({
         title: "Success",
         description: "Contract deleted successfully",
       })
+      setDeleteDialogOpen(false)
+      setContractToDelete(null)
       router.refresh()
     } catch (err) {
       toast({
@@ -203,7 +211,7 @@ export function ContractsTable({
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => handleDelete(row.original.id)}
+            onClick={() => handleDeleteClick(row.original.id)}
           >
             <Trash2 className="h-4 w-4 text-destructive" />
           </Button>
@@ -213,13 +221,24 @@ export function ContractsTable({
   ]
 
   return (
-    <DataTable<Contract, any>
-      data={contractsData}
-      columns={columns}
-      pageCount={totalPages}
-      searchPlaceholder="Search contracts..."
-      hasNextPage={hasNextPage}
-      hasPreviousPage={hasPreviousPage}
-    />
+    <>
+      <DataTable<Contract, any>
+        data={contractsData}
+        columns={columns}
+        pageCount={totalPages}
+        searchPlaceholder="Search contracts..."
+        hasNextPage={hasNextPage}
+        hasPreviousPage={hasPreviousPage}
+      />
+      <ConfirmationDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete Contract"
+        description="Are you sure you want to delete this contract? This action cannot be undone."
+        confirmText="Delete"
+        confirmVariant="destructive"
+        onConfirm={handleDelete}
+      />
+    </>
   )
 } 
