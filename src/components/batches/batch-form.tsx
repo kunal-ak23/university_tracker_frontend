@@ -520,7 +520,7 @@ export function BatchForm({ mode = 'create', batch }: BatchFormProps) {
 
         <Button 
           type="submit" 
-          disabled={mode === 'create' ? !form.formState.isDirty || !form.formState.isValid : !hasFormChanged() || !form.formState.isValid}
+          disabled={mode === 'create' ? !form.formState.isValid : !hasFormChanged() || !form.formState.isValid}
         >
           {mode === 'edit' ? 'Update' : 'Create'} Batch
         </Button>
