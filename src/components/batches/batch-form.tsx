@@ -58,6 +58,7 @@ export function BatchForm({ mode = 'create', batch }: BatchFormProps) {
   const [universities, setUniversities] = useState<University[]>([])
   const [selectedUniversity, setSelectedUniversity] = useState<University | null>(null)
   const [initialValues, setInitialValues] = useState<BatchFormValues | null>(null)
+  const [isValidating, setIsValidating] = useState(false)
 
   // Fetch universities on mount
   useEffect(() => {
@@ -111,8 +112,8 @@ export function BatchForm({ mode = 'create', batch }: BatchFormProps) {
       number_of_students: batch?.number_of_students?.toString() ?? "",
       start_year: batch?.start_year?.toString() ?? new Date().getFullYear().toString(),
       end_year: batch?.end_year?.toString() ?? (new Date().getFullYear() + 1).toString(),
-      start_date: batch?.start_date ?? "",
-      end_date: batch?.end_date ?? "",
+      start_date: batch?.start_date ?? new Date(new Date().getFullYear(), 6, 1).toISOString().split('T')[0], // July 1st of current year
+      end_date: batch?.end_date ?? new Date(new Date().getFullYear() + 1, 5, 30).toISOString().split('T')[0], // June 30th of next year
       status: batch?.status as "ongoing" | "planned" | "completed" | undefined ?? "planned",
       notes: batch?.notes ?? "",
     },
@@ -147,20 +148,41 @@ export function BatchForm({ mode = 'create', batch }: BatchFormProps) {
       if ((name === 'university' || name === 'start_year') && value.university && value.start_year) {
         try {
           const selectedUniversity = universities.find(u => u.id.toString() === value.university)
-          if (selectedUniversity) {
+          if (selectedUniversity && value.start_year && value.start_year.length === 4) {
+            // Set validating state BEFORE async operations
+            setIsValidating(true)
+            
+            // IMPORTANT: Set selectedUniversity for create mode
             setSelectedUniversity(selectedUniversity)
-            const [streamsWithContracts, programsWithContracts] = await Promise.all([
-              getStreamsWithContracts(selectedUniversity.id.toString(), value.start_year),
-              getProgramsWithContracts(selectedUniversity.id.toString(), value.start_year)
-            ])
-            setStreams(streamsWithContracts)
-            setPrograms(programsWithContracts.map(program => ({
-              id: program.id.toString(),
-              name: program.name
-            })))
-            // Reset stream and program when university or year changes
-            form.setValue('stream', '')
-            form.setValue('program', '')
+            
+            try {
+              const [streamsWithContracts, programsWithContracts] = await Promise.all([
+                getStreamsWithContracts(selectedUniversity.id.toString(), value.start_year),
+                getProgramsWithContracts(selectedUniversity.id.toString(), value.start_year)
+              ])
+              
+              setStreams(streamsWithContracts)
+              const mappedPrograms = programsWithContracts.map(program => ({
+                id: program.id.toString(),
+                name: program.name
+              }))
+              setPrograms(mappedPrograms)
+              
+              // Always reset program and stream when year changes
+              form.setValue('program', '', { shouldValidate: false, shouldDirty: false })
+              form.setValue('stream', '', { shouldValidate: false, shouldDirty: false })
+              
+              // Clear errors after reset
+              form.clearErrors(['program', 'stream'])
+              
+            } catch (fetchError) {
+              console.error('Failed to fetch data:', fetchError)
+            } finally {
+              // Reset validating state after data is loaded
+              setTimeout(() => {
+                setIsValidating(false)
+              }, 100)
+            }
           }
         } catch (error) {
           console.error('Failed to update streams and programs:', error)
@@ -308,13 +330,51 @@ export function BatchForm({ mode = 'create', batch }: BatchFormProps) {
 
           <FormField
             control={form.control}
+            name="start_year"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Start Year</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="number" 
+                    placeholder="Enter start year" 
+                    min="1900"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="end_year"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>End Year</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="number" 
+                    placeholder="Enter end year" 
+                    min="1900"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
             name="program"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Program</FormLabel>
                 <Select 
                   onValueChange={field.onChange}
-                  defaultValue={field.value}
+                  value={field.value}
                   disabled={!selectedUniversity}
                 >
                   <FormControl>
@@ -346,7 +406,7 @@ export function BatchForm({ mode = 'create', batch }: BatchFormProps) {
                 <FormLabel>Stream</FormLabel>
                 <Select 
                   onValueChange={field.onChange}
-                  defaultValue={field.value}
+                  value={field.value}
                   disabled={!selectedUniversity}
                 >
                   <FormControl>
@@ -422,44 +482,6 @@ export function BatchForm({ mode = 'create', batch }: BatchFormProps) {
 
           <FormField
             control={form.control}
-            name="start_year"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Start Year</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="number" 
-                    placeholder="Enter start year" 
-                    min="1900"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="end_year"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>End Year</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="number" 
-                    placeholder="Enter end year" 
-                    min="1900"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
             name="start_date"
             render={({ field }) => (
               <FormItem>
@@ -520,7 +542,22 @@ export function BatchForm({ mode = 'create', batch }: BatchFormProps) {
 
         <Button 
           type="submit" 
-          disabled={mode === 'create' ? !form.formState.isValid : !hasFormChanged() || !form.formState.isValid}
+          disabled={((): boolean => {
+            let disabled = false
+            const formValues = form.getValues()
+            
+            if (mode === 'create') {
+              // Explicitly check if program and stream are filled
+              const hasProgram = formValues.program && formValues.program.length > 0
+              const hasStream = formValues.stream && formValues.stream.length > 0
+              
+              disabled = !form.formState.isValid || form.formState.isSubmitting || isValidating || !hasProgram || !hasStream
+              
+            } else {
+              disabled = !hasFormChanged() || !form.formState.isValid || form.formState.isSubmitting || isValidating
+            }
+            return disabled
+          })()}
         >
           {mode === 'edit' ? 'Update' : 'Create'} Batch
         </Button>
