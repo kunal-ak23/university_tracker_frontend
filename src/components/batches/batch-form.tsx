@@ -241,6 +241,7 @@ export function BatchForm({ mode = 'create', batch }: BatchFormProps) {
       const submitData = {
         name: data.name,
         university_id: parseInt(data.university),
+        program_id: parseInt(data.program),
         stream_id: parseInt(data.stream),
         number_of_students: parseInt(data.number_of_students),
         start_year: parseInt(data.start_year),
