@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import { getSession } from "next-auth/react";
+import { getSession, signOut } from "next-auth/react";
+import { interceptFetch } from "./interceptor";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -7,26 +8,83 @@ export const apiClient = {
   async fetch(endpoint: string, options: RequestInit = {}) {
     const session = await getSession();
     
+    // @ts-ignore
+    if (!session?.accessToken) {
+      throw new Error('No access token found. Please login again.')
+    }
+
     const headers = {
       "Content-Type": "application/json",
       // @ts-ignore
-      ...(session?.accessToken
-        // @ts-ignore
-        ? { Authorization: `Bearer ${session.accessToken}` }
-        : {}),
+      Authorization: `Bearer ${session.accessToken}`,
       ...options.headers,
     };
 
-    const response = await fetch(`${BASE_URL}${endpoint}`, {
-      ...options,
-      headers,
-    });
+    let response = await interceptFetch(
+      fetch(`${BASE_URL}${endpoint}`, {
+        ...options,
+        headers,
+      })
+    );
 
-    if (!response.ok) {
-      throw new Error(`API error: ${response.statusText}`);
+    // If token expired, try to refresh
+    // @ts-ignore
+    if (response.status === 401 && session.refreshToken) {
+      try {
+        // Call refresh token endpoint directly
+        const refreshResponse = await fetch(`${BASE_URL}/auth/refresh/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            // @ts-ignore
+            refresh: session.refreshToken
+          })
+        })
+
+        if (!refreshResponse.ok) {
+          await signOut()
+          throw new Error('Refresh token expired. Please login again.')
+        }
+
+        const { access: newAccessToken } = await refreshResponse.json()
+        
+        // Retry original request with new token
+        response = await interceptFetch(
+          fetch(`${BASE_URL}${endpoint}`, {
+            ...options,
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${newAccessToken}`,
+              ...options.headers,
+            },
+          })
+        )
+      } catch (error) {
+        await signOut()
+        throw error
+      }
     }
 
-    if (!!response) {
+    if (!response.ok) {
+      try {
+        const contentType = response.headers.get('content-type')
+        if (contentType && contentType.includes('application/json')) {
+          const errorData = await response.json()
+          throw new Error(JSON.stringify(errorData))
+        }
+        const errorText = await response.text()
+        throw new Error(errorText || `API request failed with status ${response.status}`)
+      } catch (error) {
+        if (error instanceof Error) {
+          throw error
+        }
+        throw new Error('API request failed')
+      }
+    }
+
+    if (response.status !== 204) {
       return await response.json()
     }
     return null

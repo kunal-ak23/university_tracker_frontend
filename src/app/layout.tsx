@@ -3,7 +3,7 @@ import { Inter, Righteous } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/shared/theme-provider"
 import { auth } from "@/auth"
-import { SessionProvider } from "next-auth/react"
+import { AppProviders } from "@/components/providers/app-providers"
 import { Toaster } from "@/components/ui/toaster"
 import { cn } from '@/service/utils'
 
@@ -31,10 +31,10 @@ export default async function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <SessionProvider session={session}>
+          <AppProviders session={session}>
             {children}
             <Toaster />
-          </SessionProvider>
+          </AppProviders>
         </ThemeProvider>
       </body>
     </html>

@@ -36,6 +36,36 @@ export interface PaymentFormData {
 
 export type PaymentStatus = 'unpaid' | 'partially_paid' | 'paid'
 
+export interface InvoiceOEMPayment {
+  id: number
+  invoice: number
+  amount: string
+  payment_method: 'cash' | 'bank_transfer' | 'cheque' | 'upi' | 'online'
+  status: 'pending' | 'completed' | 'failed'
+  payment_date: string
+  reference_number?: string
+  description?: string
+  notes?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface InvoiceTDS {
+  id: number
+  invoice: number
+  amount: string
+  tds_rate: string
+  deduction_date: string
+  reference_number?: string
+  certificate_type?: 'form_16a' | 'form_16' | 'form_26as' | 'other'
+  certificate_document?: string
+  description?: string
+  notes?: string
+  tds_note?: string
+  created_at: string
+  updated_at: string
+}
+
 export interface Invoice {
   id: number
   billing: number
@@ -49,6 +79,15 @@ export interface Invoice {
   status: PaymentStatus
   notes?: string
   payments: Payment[]
+  oem_payments?: InvoiceOEMPayment[]
+  tds_entries?: InvoiceTDS[]
+  oem_transfer_amount?: string
+  oem_transfer_paid?: string
+  oem_transfer_remaining?: string
+  total_tds?: string
+  net_invoice_amount?: string
+  net_amount_received?: string
+  net_remaining_amount?: string
   created_at: string
   updated_at: string
 } 

@@ -6,6 +6,7 @@ import { notFound } from "next/navigation"
 import { ExternalLink, Plus, Users, Calendar, IndianRupee, ClipboardList, Clock } from "lucide-react"
 import { UniversityActions } from "@/components/universities/university-actions"
 import { UniversityEventForm } from "@/components/universities/university-event-form"
+import { UniversityLedgerCard } from "@/components/universities/university-ledger-card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { University } from "@/types/university"
@@ -369,6 +370,9 @@ export default async function UniversityPage({
           <h3 className="text-xl font-semibold">Address</h3>
           <p className="whitespace-pre-line">{university.address}</p>
         </div>
+
+        {/* Ledger Card */}
+        <UniversityLedgerCard universityId={id} />
       </div>
     </div>
   )

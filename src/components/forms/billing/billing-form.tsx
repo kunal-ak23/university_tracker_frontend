@@ -47,6 +47,53 @@ export function BillingForm({ mode = 'create', billing, availableBatches }: Bill
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showPublishDialog, setShowPublishDialog] = useState(false)
   const [draftId, setDraftId] = useState<string | null>(billing?.id || null)
+  // Extract university and year from billing batches
+  const getUniversityFromBilling = (): string => {
+    if (!billing?.batches || billing.batches.length === 0) return ""
+    
+    // Get first batch (could be ID or object)
+    const firstBatchId = typeof billing.batches[0] === 'number' 
+      ? billing.batches[0] 
+      : typeof billing.batches[0] === 'object' && billing.batches[0]?.id
+        ? billing.batches[0].id
+        : null
+    
+    if (!firstBatchId) return ""
+    
+    // Find the batch in availableBatches
+    const batch = availableBatches.find(b => b.id === firstBatchId || b.id === Number(firstBatchId))
+    if (!batch) return ""
+    
+    // Extract university ID
+    const universityId = typeof batch.university === 'object' 
+      ? batch.university?.id?.toString()
+      : batch.university?.toString()
+    
+    return universityId || ""
+  }
+  
+  const getYearFromBilling = (): string => {
+    if (!billing?.batches || billing.batches.length === 0) {
+      return new Date().getFullYear().toString()
+    }
+    
+    // Get first batch (could be ID or object)
+    const firstBatchId = typeof billing.batches[0] === 'number' 
+      ? billing.batches[0] 
+      : typeof billing.batches[0] === 'object' && billing.batches[0]?.id
+        ? billing.batches[0].id
+        : null
+    
+    if (!firstBatchId) return new Date().getFullYear().toString()
+    
+    // Find the batch in availableBatches
+    const batch = availableBatches.find(b => b.id === firstBatchId || b.id === Number(firstBatchId))
+    if (!batch) return new Date().getFullYear().toString()
+    
+    // Use start_year as the year
+    return batch.start_year?.toString() || new Date().getFullYear().toString()
+  }
+
   const [selectedBatches, setSelectedBatches] = useState<string[]>(
     billing?.batches.map(b => {
       if (typeof b === 'number') return b.toString()
@@ -62,12 +109,27 @@ export function BillingForm({ mode = 'create', billing, availableBatches }: Bill
     resolver: zodResolver(billingFormSchema),
     defaultValues: {
       name: billing?.name ?? "",
-      university: "",
-      year: new Date().getFullYear().toString(),
+      university: "", // Will be set via useEffect
+      year: new Date().getFullYear().toString(), // Will be set via useEffect
       notes: billing?.notes ?? "",
       batches: selectedBatches,
     },
   })
+
+  // Populate university and year from billing batches when in edit mode
+  useEffect(() => {
+    if (mode === 'edit' && billing && availableBatches.length > 0) {
+      const universityId = getUniversityFromBilling()
+      const year = getYearFromBilling()
+      
+      if (universityId) {
+        form.setValue('university', universityId)
+      }
+      if (year) {
+        form.setValue('year', year)
+      }
+    }
+  }, [mode, billing, availableBatches, form])
 
   // Fetch universities on mount
   useEffect(() => {
@@ -246,7 +308,7 @@ export function BillingForm({ mode = 'create', billing, availableBatches }: Bill
             render={({ field }) => (
               <FormItem>
                 <FormLabel>University</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select university" />
