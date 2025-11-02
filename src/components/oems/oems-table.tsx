@@ -5,10 +5,11 @@ import { DataTable } from "@/components/ui/data-table"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Edit, Trash2 } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import { deleteOEM } from "@/service/api/oems"
 import { useToast } from "@/hooks/use-toast"
 import { ColumnDef, Row } from "@tanstack/react-table"
+import { buildUrlWithReturn } from "@/service/utils/navigation"
 
 interface OEMsTableProps {
   oems: OEM[]
@@ -34,6 +35,8 @@ export function OEMsTable({
   totalCount,
 }: OEMsTableProps) {
   const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const { toast } = useToast()
 
   const handleDelete = async (id: string) => {
@@ -86,9 +89,13 @@ export function OEMsTable({
     {
       id: "actions",
       header: "Actions",
-      cell: ({ row }: { row: Row<OEM> }) => (
+      cell: ({ row }: { row: Row<OEM> }) => {
+        const currentPath = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '')
+        const editUrl = buildUrlWithReturn(`/oems/${row.original.id}/edit`, currentPath)
+        
+        return (
         <div className="flex items-center gap-2">
-          <Link href={`/oems/${row.original.id}/edit`}>
+          <Link href={editUrl}>
             <Button variant="ghost" size="icon">
               <Edit className="h-4 w-4" />
             </Button>
@@ -101,7 +108,8 @@ export function OEMsTable({
             <Trash2 className="h-4 w-4 text-destructive" />
           </Button>
         </div>
-      ),
+        )
+      },
     },
   ]
 

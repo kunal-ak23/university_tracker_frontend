@@ -32,20 +32,19 @@ export function UniversityLedgerCard({ universityId }: UniversityLedgerCardProps
       const { startDate, endDate } = getDateRange(selectedPeriod)
       
       // Fetch summary
-      const summary = await getLedgerSummary({
-        university_id: universityId,
-        start_date: startDate.toISOString().split('T')[0],
-        end_date: endDate.toISOString().split('T')[0],
-      })
+      const summary = await getLedgerSummary(
+        universityId.toString(),
+        startDate.toISOString().split('T')[0],
+        endDate.toISOString().split('T')[0]
+      )
       setLedgerSummary(summary)
 
       // Fetch recent 5 transactions
       const transactions = await getLedgerEntries({
-        university_id: universityId,
-        limit: 5,
-        offset: 0,
+        university: universityId.toString(),
         start_date: startDate.toISOString().split('T')[0],
         end_date: endDate.toISOString().split('T')[0],
+        page: 1,
       })
       setRecentTransactions(transactions.results || [])
     } catch (error) {

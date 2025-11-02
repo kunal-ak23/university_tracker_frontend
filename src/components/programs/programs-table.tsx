@@ -5,7 +5,8 @@ import { DataTable } from "@/components/ui/data-table"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Edit, Trash2 } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname, useSearchParams } from "next/navigation"
+import { buildUrlWithReturn } from "@/service/utils/navigation"
 import { deleteProgram } from "@/service/api/programs"
 import { useToast } from "@/hooks/use-toast"
 import { ColumnDef, Row } from "@tanstack/react-table"
@@ -42,6 +43,8 @@ export function ProgramsTable({
   showProvider = true,
 }: ProgramsTableProps) {
   const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const { toast } = useToast()
 
   const handleDelete = async (id: number) => {
@@ -99,9 +102,13 @@ export function ProgramsTable({
     {
       id: "actions",
       header: "Actions",
-      cell: ({ row }: { row: Row<Program> }) => (
+      cell: ({ row }: { row: Row<Program> }) => {
+        const currentPath = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '')
+        const editUrl = buildUrlWithReturn(`/programs/${row.original.id}/edit`, currentPath)
+        
+        return (
         <div className="flex items-center gap-2">
-          <Link href={`/programs/${row.original.id}/edit`}>
+          <Link href={editUrl}>
             <Button variant="ghost" size="icon">
               <Edit className="h-4 w-4" />
             </Button>
@@ -114,7 +121,8 @@ export function ProgramsTable({
             <Trash2 className="h-4 w-4 text-destructive" />
           </Button>
         </div>
-      ),
+        )
+      },
     },
   ]
 

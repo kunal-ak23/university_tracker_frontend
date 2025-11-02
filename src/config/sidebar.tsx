@@ -89,12 +89,6 @@ export const sidebarConfig: SidebarSection[] = [
         icon: Building2,
         roles: ["admin", "provider_poc"],
       },
-      {
-        title: "Batches",
-        href: "/batches",
-        icon: FileText,
-        roles: ["admin", "provider_poc"],
-      },
     ],
   },
   {
@@ -105,6 +99,12 @@ export const sidebarConfig: SidebarSection[] = [
         title: "Universities",
         href: "/universities",
         icon: Building2,
+        roles: ["admin", "university_poc", "staff"],
+      },
+      {
+        title: "Batches",
+        href: "/batches",
+        icon: FileText,
         roles: ["admin", "university_poc", "staff"],
       },
       {

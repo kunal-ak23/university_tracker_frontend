@@ -1,8 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
+import { buildUrlWithReturn } from "@/service/utils/navigation"
 import { Button } from "@/components/ui/button"
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
 import { deleteUniversity } from "@/service/api/universities"
@@ -21,8 +22,14 @@ interface UniversityActionsProps {
 
 export function UniversityActions({ universityId }: UniversityActionsProps) {
   const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const { toast } = useToast()
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  
+  // Build return URL safely for SSR
+  const currentPath = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '')
+  const editUrl = buildUrlWithReturn(`/universities/${universityId}/edit`, currentPath)
 
   const handleDelete = async () => {
     try {
@@ -80,7 +87,7 @@ export function UniversityActions({ universityId }: UniversityActionsProps) {
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <Link href={`/universities/${universityId}/edit`}>
+            <Link href={editUrl}>
               <Button 
                 variant="outline"
                 size="icon"

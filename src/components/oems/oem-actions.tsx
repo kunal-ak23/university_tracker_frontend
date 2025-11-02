@@ -1,13 +1,14 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
 import { deleteOEM } from "@/service/api/oems"
 import Link from "next/link"
 import { Edit, Trash2 } from "lucide-react"
+import { buildUrlWithReturn } from "@/service/utils/navigation"
 import {
   Tooltip,
   TooltipContent,
@@ -21,8 +22,14 @@ interface OEMActionsProps {
 
 export function OEMActions({ oemId }: OEMActionsProps) {
   const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const { toast } = useToast()
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  
+  // Build return URL safely for SSR
+  const currentPath = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '')
+  const editUrl = buildUrlWithReturn(`/oems/${oemId}/edit`, currentPath)
 
   return (
     <div className="flex gap-2">
@@ -44,7 +51,7 @@ export function OEMActions({ oemId }: OEMActionsProps) {
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <Link href={`/oems/${oemId}/edit`}>
+            <Link href={editUrl}>
               <Button 
                 variant="default"
                 size="icon"

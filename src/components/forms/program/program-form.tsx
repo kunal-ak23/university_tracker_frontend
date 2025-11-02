@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
+import { useReturnNavigation } from "@/service/utils/navigation"
 import { Program, DurationUnit } from "@/types/program"
 import { createProgram, updateProgram } from "@/service/api/programs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -60,6 +61,7 @@ function generateProgramCode(oemName: string, programName: string): string {
 export function ProgramForm({ mode = 'create', program, providerId, onSuccess, onCancel }: ProgramFormProps) {
   const router = useRouter()
   const { toast } = useToast()
+  const { navigateBack } = useReturnNavigation()
   const [oems, setOEMs] = useState<OEM[]>([])
   const [selectedOEM, setSelectedOEM] = useState<OEM | undefined>(
     program?.provider ?? oems.find(oem => oem.id.toString() === providerId?.toString())
@@ -134,8 +136,7 @@ export function ProgramForm({ mode = 'create', program, providerId, onSuccess, o
         if (onSuccess) {
           onSuccess()
         } else {
-          router.back()
-          router.refresh()
+          navigateBack()
         }
       } else {
         await createProgram(data)
@@ -146,8 +147,7 @@ export function ProgramForm({ mode = 'create', program, providerId, onSuccess, o
         if (onSuccess) {
           onSuccess()
         } else {
-          router.back()
-          router.refresh()
+          navigateBack()
         }
       }
     } catch (error) {
@@ -372,7 +372,7 @@ export function ProgramForm({ mode = 'create', program, providerId, onSuccess, o
               if (onCancel) {
                 onCancel()
               } else {
-                router.back()
+                navigateBack()
               }
             }}
           >

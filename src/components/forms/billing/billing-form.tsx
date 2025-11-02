@@ -8,6 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
+import { useReturnNavigation } from "@/service/utils/navigation"
 import { useState, useEffect } from "react"
 import { MultiSelect } from "@/components/ui/multi-select"
 import { Textarea } from "@/components/ui/textarea"
@@ -44,6 +45,7 @@ function isBatch(batch: any): batch is Batch {
 export function BillingForm({ mode = 'create', billing, availableBatches }: BillingFormProps) {
   const router = useRouter()
   const { toast } = useToast()
+  const { navigateBack, getReturnUrl } = useReturnNavigation()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showPublishDialog, setShowPublishDialog] = useState(false)
   const [draftId, setDraftId] = useState<string | null>(billing?.id || null)
@@ -234,7 +236,7 @@ export function BillingForm({ mode = 'create', billing, availableBatches }: Bill
           title: "Success",
           description: "Receivable updated successfully",
         })
-        router.push('/billings')
+        navigateBack()
       } else {
         // Create draft billing
         const response = await createBilling(data)
@@ -243,10 +245,11 @@ export function BillingForm({ mode = 'create', billing, availableBatches }: Bill
           title: "Success",
           description: "Draft billing created successfully. You can now review and publish it.",
         })
-        // Redirect to edit page
-        router.push(`/billings/${response.id}/edit`)
+        // Redirect to edit page with returnTo
+        const returnTo = getReturnUrl() || '/billings'
+        router.push(`/billings/${response.id}/edit${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ''}`)
+        router.refresh()
       }
-      router.refresh()
     } catch (error) {
       console.error(`Failed to ${mode} billing:`, error)
       toast({
@@ -269,8 +272,7 @@ export function BillingForm({ mode = 'create', billing, availableBatches }: Bill
         title: "Success",
         description: "Receivable published successfully",
       })
-      router.push('/billings')
-      router.refresh()
+      navigateBack()
     } catch (error) {
       console.error('Failed to publish billing:', error)
       toast({
@@ -506,7 +508,7 @@ export function BillingForm({ mode = 'create', billing, availableBatches }: Bill
           <Button
             type="button"
             variant="outline"
-            onClick={() => router.back()}
+            onClick={() => navigateBack()}
             disabled={isSubmitting}
           >
             Cancel

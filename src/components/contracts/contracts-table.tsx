@@ -6,13 +6,14 @@ import { DataTable } from "@/components/ui/data-table"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Edit, Trash2, Archive } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import { archiveContract, deleteContract } from "@/service/api/contracts"
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
 import { formatDate } from "@/service/utils"
 import { ColumnDef, Row } from "@tanstack/react-table"
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
+import { buildUrlWithReturn } from "@/service/utils/navigation"
 
 interface ContractsTableProps {
   contractsData: Contract[]
@@ -34,6 +35,8 @@ export function ContractsTable({
   hasPreviousPage,
   totalPages,
 }: ContractsTableProps) {
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const router = useRouter()
   const { toast } = useToast()
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -194,9 +197,13 @@ export function ContractsTable({
     {
       id: "actions",
       header: "Actions",
-      cell: ({ row }: { row: Row<Contract> }) => (
+      cell: ({ row }: { row: Row<Contract> }) => {
+        const currentPath = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '')
+        const editUrl = buildUrlWithReturn(`/contracts/${row.original.id}/edit`, currentPath)
+        
+        return (
         <div className="flex items-center gap-2">
-          <Link href={`/contracts/${row.original.id}/edit`}>
+          <Link href={editUrl}>
             <Button variant="ghost" size="icon">
               <Edit className="h-4 w-4" />
             </Button>
@@ -216,7 +223,8 @@ export function ContractsTable({
             <Trash2 className="h-4 w-4 text-destructive" />
           </Button>
         </div>
-      ),
+        )
+      },
     },
   ]
 

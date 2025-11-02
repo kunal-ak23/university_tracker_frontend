@@ -8,6 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
+import { useReturnNavigation } from "@/service/utils/navigation"
 import { FileUpload } from "@/components/ui/file-upload"
 import { useState, useEffect } from "react"
 import { createContract, updateContract, deleteContract, archiveContract, deleteContractFile } from "@/service/api/contracts"
@@ -60,6 +61,7 @@ const statusOptions = [
 export function ContractForm({ mode = 'create', contract, preSelectedUniversity }: ContractFormProps) {
   const router = useRouter()
   const { toast } = useToast()
+  const { navigateBack } = useReturnNavigation()
   const [files, setFiles] = useState<File[]>([])
   const [universities, setUniversities] = useState<University[]>([])
   const [oems, setOems] = useState<OEM[]>([])
@@ -399,8 +401,7 @@ export function ContractForm({ mode = 'create', contract, preSelectedUniversity 
         description: `Contract ${mode === 'edit' ? 'updated' : 'created'} successfully`,
       })
 
-      router.push(`/contracts/${updatedContract.id}`)
-      router.refresh()
+      navigateBack()
     } catch (error) {
       console.error(`Failed to ${mode} contract:`, error)
       
@@ -462,8 +463,7 @@ export function ContractForm({ mode = 'create', contract, preSelectedUniversity 
         title: "Success",
         description: "Contract deleted successfully",
       })
-      router.push('/contracts')
-      router.refresh()
+      navigateBack()
     } catch (error) {
       console.error('Failed to delete contract:', error)
       toast({
@@ -852,7 +852,7 @@ export function ContractForm({ mode = 'create', contract, preSelectedUniversity 
             <Button
               type="button"
               variant="outline"
-              onClick={() => router.back()}
+              onClick={() => navigateBack()}
             >
               Cancel
             </Button>

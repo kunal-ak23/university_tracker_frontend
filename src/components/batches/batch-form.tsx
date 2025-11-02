@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { useToast } from "@/hooks/use-toast"
+import { useReturnNavigation } from "@/service/utils/navigation"
 import { createBatch, updateBatch } from "@/service/api/batches"
 import { getContractPricing } from "@/service/api/contracts"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -44,6 +45,8 @@ interface BatchFormProps {
   mode?: 'create' | 'edit'
   batch?: Batch
   initialValues?: Partial<BatchFormValues>
+  onSuccess?: () => void
+  onCancel?: () => void
 }
 
 const statusOptions = [
@@ -52,9 +55,10 @@ const statusOptions = [
   { label: "Completed", value: "completed" },
 ]
 
-export function BatchForm({ mode = 'create', batch, initialValues: propInitialValues }: BatchFormProps) {
+export function BatchForm({ mode = 'create', batch, initialValues: propInitialValues, onSuccess, onCancel }: BatchFormProps) {
   const router = useRouter()
   const { toast } = useToast()
+  const { navigateBack } = useReturnNavigation()
   const [streams, setStreams] = useState<Stream[]>([])
   const [universities, setUniversities] = useState<University[]>([])
   const [selectedUniversity, setSelectedUniversity] = useState<University | null>(null)
@@ -334,8 +338,11 @@ export function BatchForm({ mode = 'create', batch, initialValues: propInitialVa
           description: "Batch created successfully",
         })
       }
-      router.push('/batches')
-      router.refresh()
+      if (onSuccess) {
+        onSuccess()
+      } else {
+        navigateBack()
+      }
     } catch (error) {
       console.error(`Failed to ${mode} batch:`, error)
       toast({

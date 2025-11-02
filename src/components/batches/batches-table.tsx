@@ -10,7 +10,8 @@ import { formatDate } from "@/service/utils"
 import { Batch } from "@/types/batch"
 import { ColumnDef, Row } from "@tanstack/react-table"
 import { deleteBatch, getBatch } from "@/service/api/batches"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname, useSearchParams } from "next/navigation"
+import { buildUrlWithReturn } from "@/service/utils/navigation"
 
 interface BatchesTableProps {
   batches: Batch[]
@@ -36,6 +37,8 @@ export function BatchesTable({
 }: BatchesTableProps) {
   const { toast } = useToast()
   const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
 
   const handleDelete = async (batchId: number) => {
     try {
@@ -150,9 +153,13 @@ export function BatchesTable({
     {
       id: "actions",
       header: "Actions",
-      cell: ({ row }: { row: Row<Batch> }) => (
+      cell: ({ row }: { row: Row<Batch> }) => {
+        const currentPath = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '')
+        const editUrl = buildUrlWithReturn(`/batches/${row.original.id}/edit`, currentPath)
+        
+        return (
         <div className="flex items-center gap-2">
-          <Link href={`/batches/${row.original.id}/edit`}>
+          <Link href={editUrl}>
             <Button variant="ghost" size="icon" title="Edit">
               <Edit className="h-4 w-4" />
             </Button>
@@ -174,7 +181,8 @@ export function BatchesTable({
             <Trash2 className="h-4 w-4 text-destructive" />
           </Button>
         </div>
-      ),
+        )
+      },
     },
   ]
 

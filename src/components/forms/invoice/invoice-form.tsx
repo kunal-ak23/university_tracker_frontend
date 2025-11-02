@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
+import { useReturnNavigation } from "@/service/utils/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { Button } from "@/components/ui/button"
@@ -69,6 +70,7 @@ interface InvoiceFormProps {
 export function InvoiceForm({ invoice }: InvoiceFormProps) {
   const router = useRouter()
   const { toast } = useToast()
+  const { navigateBack } = useReturnNavigation()
   const [billings, setBillings] = useState<Billing[]>([])
   const [open, setOpen] = useState(false)
   const [searchValue, setSearchValue] = useState("")
@@ -185,8 +187,7 @@ export function InvoiceForm({ invoice }: InvoiceFormProps) {
           })
         }
 
-        router.push('/invoices')
-        router.refresh()
+        navigateBack()
       } catch (error) {
         console.error('API Error:', error)
         if (error instanceof Error) {
@@ -552,7 +553,7 @@ export function InvoiceForm({ invoice }: InvoiceFormProps) {
           <Button
             type="button"
             variant="outline"
-            onClick={() => router.back()}
+            onClick={() => navigateBack()}
             disabled={isSubmitting}
           >
             Cancel

@@ -8,6 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
+import { useReturnNavigation } from "@/service/utils/navigation"
 import { useState } from "react"
 import { Textarea } from "@/components/ui/textarea"
 import { Payment, Invoice } from "@/types/payment"
@@ -40,6 +41,7 @@ interface PaymentFormProps {
 export function PaymentForm({ mode = 'create', payment, invoices }: PaymentFormProps) {
   const router = useRouter()
   const { toast } = useToast()
+  const { navigateBack } = useReturnNavigation()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const form = useForm<PaymentFormValues>({
@@ -72,8 +74,7 @@ export function PaymentForm({ mode = 'create', payment, invoices }: PaymentFormP
           description: "Payment created successfully",
         })
       }
-      router.push('/payments')
-      router.refresh()
+      navigateBack()
     } catch (error) {
       console.error(`Failed to ${mode} payment:`, error)
       toast({
@@ -240,7 +241,7 @@ export function PaymentForm({ mode = 'create', payment, invoices }: PaymentFormP
           <Button
             type="button"
             variant="outline"
-            onClick={() => router.back()}
+            onClick={() => navigateBack()}
             disabled={isSubmitting}
           >
             Cancel

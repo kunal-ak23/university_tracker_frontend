@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
+import { useReturnNavigation } from "@/service/utils/navigation"
 import { OEM } from "@/types/oem"
 import { createOEM, updateOEM } from "@/service/api/oems"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -34,6 +35,7 @@ interface OEMFormProps {
 export function OEMForm({ mode = 'create', oem }: OEMFormProps) {
   const router = useRouter()
   const { toast } = useToast()
+  const { navigateBack } = useReturnNavigation()
 
   const [pocs, setPocs] = useState<User[]>([])
 
@@ -85,8 +87,7 @@ export function OEMForm({ mode = 'create', oem }: OEMFormProps) {
           description: "OEM created successfully",
         })
       }
-      router.push('/oems')
-      router.refresh()
+      navigateBack()
     } catch (error) {
       console.error(`Failed to ${mode} OEM:`, error)
       
@@ -260,7 +261,7 @@ export function OEMForm({ mode = 'create', oem }: OEMFormProps) {
           <Button
             type="button"
             variant="outline"
-            onClick={() => router.back()}
+            onClick={() => navigateBack()}
           >
             Cancel
           </Button>

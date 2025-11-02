@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
+import { useReturnNavigation } from "@/service/utils/navigation"
 import { University } from "@/types/university"
 import { createUniversity, updateUniversity } from "@/service/api/universities"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -40,6 +41,7 @@ interface UniversityFormProps {
 export function UniversityForm({ mode = 'create', university }: UniversityFormProps) {
   const router = useRouter()
   const { toast } = useToast()
+  const { navigateBack } = useReturnNavigation()
 
   const [pocs, setPocs] = useState<User[]>([])
 
@@ -98,8 +100,7 @@ export function UniversityForm({ mode = 'create', university }: UniversityFormPr
           description: "University created successfully",
         })
       }
-      router.push('/universities')
-      router.refresh()
+      navigateBack()
     } catch (error) {
       console.error(`Failed to ${mode} university:`, error)
       

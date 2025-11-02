@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, use } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import { getBatch } from "@/service/api/batches"
 import { BatchForm } from "@/components/batches/batch-form"
@@ -14,6 +14,7 @@ export default function EditBatchPage({
 }>) {
   const { id } = use(params)
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { toast } = useToast()
   const [batch, setBatch] = useState<Batch | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -31,13 +32,19 @@ export default function EditBatchPage({
           description: "Failed to load batch",
           variant: "destructive",
         })
-        router.push('/batches')
+        // Use returnTo if available, otherwise go to batches page
+        const returnTo = searchParams.get('returnTo')
+        if (returnTo) {
+          router.push(returnTo)
+        } else {
+          router.push('/batches')
+        }
       } finally {
         setIsLoading(false)
       }
     }
     fetchBatch()
-  }, [id, router, toast])
+  }, [id, router, toast, searchParams])
 
   if (isLoading || !batch) {
     return <div className="flex items-center justify-center h-24">Loading...</div>
