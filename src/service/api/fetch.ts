@@ -2,7 +2,8 @@
 
 "use server";
 
-import { auth, signOut } from "@/auth"
+import { auth } from "@/auth"
+import { SessionExpiredError } from "./errors"
 
 
 export async function apiFetch(
@@ -55,8 +56,8 @@ export async function apiFetch(
       })
 
       if (!refreshResponse.ok) {
-        await signOut();
-        throw new Error('Refresh token expired. Please login again.')
+        // Throw a specific error that client can handle
+        throw new SessionExpiredError('Refresh token expired. Please login again.')
       }
 
       const { access: newAccessToken } = await refreshResponse.json()
@@ -71,8 +72,12 @@ export async function apiFetch(
         },
       })
     } catch (error) {
-      await signOut();
-      throw error
+      // If it's already a SessionExpiredError, re-throw it
+      if (error instanceof SessionExpiredError) {
+        throw error
+      }
+      // Otherwise, wrap it in a SessionExpiredError
+      throw new SessionExpiredError('Failed to refresh token. Please login again.')
     }
   }
 

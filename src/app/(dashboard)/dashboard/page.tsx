@@ -10,16 +10,18 @@ import { OverdueBillings } from "@/components/dashboard/overdue-billings"
 import { getDashboardSummary } from "@/service/api/dashboard"
 import type { DashboardSummary } from "@/service/api/dashboard"
 import { formatCurrency } from "@/service/utils"
-import { useSession } from "next-auth/react"
+import { useSession, signOut } from "next-auth/react"
 import { getLeads } from "@/service/api/leads"
 import { LeadStatus } from "@/types/lead"
 import { Button } from "@/components/ui/button"
+import { useRouter } from "next/navigation"
 
 export default function DashboardPage() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const { data: session } = useSession()
+  const router = useRouter()
   const [leadStats, setLeadStats] = useState({
     total: 0,
     hot: 0,
@@ -53,14 +55,25 @@ export default function DashboardPage() {
         }
       } catch (error) {
         console.error('Failed to load dashboard data:', error)
-        setError('Failed to load dashboard data. Please try again later.')
+        const errorMessage = error instanceof Error ? error.message : 'Failed to load dashboard data. Please try again later.'
+        
+        // Check if it's a session expiration error
+        if (errorMessage.includes('Refresh token expired') || 
+            errorMessage.includes('session expired') ||
+            errorMessage.includes('Please login again')) {
+          // Sign out and redirect to login
+          await signOut({ redirect: true, callbackUrl: '/login?error=session_expired' })
+          return
+        }
+        
+        setError(errorMessage)
       } finally {
         setIsLoading(false)
       }
     }
 
     loadData()
-  }, [session?.user?.role])
+  }, [session?.user?.role, router])
 
   if (isLoading) {
     return (

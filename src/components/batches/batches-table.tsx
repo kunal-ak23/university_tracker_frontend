@@ -4,12 +4,12 @@ import { useToast } from "@/hooks/use-toast"
 import { DataTable } from "@/components/ui/data-table"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Edit, Trash2 } from "lucide-react"
+import { Edit, Trash2, Copy } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { formatDate } from "@/service/utils"
 import { Batch } from "@/types/batch"
 import { ColumnDef, Row } from "@tanstack/react-table"
-import { deleteBatch } from "@/service/api/batches"
+import { deleteBatch, getBatch } from "@/service/api/batches"
 import { useRouter } from "next/navigation"
 
 interface BatchesTableProps {
@@ -50,6 +50,52 @@ export function BatchesTable({
       toast({
         title: "Error",
         description: "Failed to delete batch",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleDuplicate = async (batch: Batch) => {
+    try {
+      // Fetch full batch details if not already available
+      let batchData = batch
+      if (!batch.university || !batch.stream || typeof batch.university === 'number') {
+        batchData = await getBatch(batch.id.toString())
+      }
+      
+      // Build query params from batch data
+      const params = new URLSearchParams()
+      params.set('copyFrom', 'true')
+      
+      const universityId = typeof batchData.university === 'object' 
+        ? batchData.university.id.toString() 
+        : batchData.university?.toString() || ''
+      const streamId = typeof batchData.stream === 'object' 
+        ? batchData.stream.id.toString() 
+        : batchData.stream?.toString() || ''
+      const programId = typeof batchData.program === 'object' 
+        ? batchData.program.id.toString() 
+        : batchData.program?.toString() || ''
+      
+      params.set('university', universityId)
+      params.set('stream', streamId)
+      params.set('program', programId)
+      params.set('name', batchData.name)
+      params.set('number_of_students', batchData.number_of_students.toString())
+      params.set('start_year', batchData.start_year.toString())
+      params.set('end_year', batchData.end_year.toString())
+      params.set('status', batchData.status || 'planned')
+      if (batchData.start_date) params.set('start_date', batchData.start_date)
+      if (batchData.end_date) params.set('end_date', batchData.end_date)
+      if (batchData.notes) params.set('notes', batchData.notes)
+      
+      // Navigate to create page with copied values
+      router.push(`/batches/new?${params.toString()}`)
+    } catch (error) {
+      console.error("Failed to duplicate batch:", error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to duplicate batch",
         variant: "destructive",
       })
     }
@@ -107,14 +153,23 @@ export function BatchesTable({
       cell: ({ row }: { row: Row<Batch> }) => (
         <div className="flex items-center gap-2">
           <Link href={`/batches/${row.original.id}/edit`}>
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" title="Edit">
               <Edit className="h-4 w-4" />
             </Button>
           </Link>
           <Button
             variant="ghost"
             size="icon"
+            onClick={() => handleDuplicate(row.original)}
+            title="Duplicate"
+          >
+            <Copy className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={() => handleDelete(row.original.id)}
+            title="Delete"
           >
             <Trash2 className="h-4 w-4 text-destructive" />
           </Button>

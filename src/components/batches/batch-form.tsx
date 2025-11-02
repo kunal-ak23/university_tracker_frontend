@@ -43,6 +43,7 @@ export type BatchFormValues = z.infer<typeof batchFormSchema>
 interface BatchFormProps {
   mode?: 'create' | 'edit'
   batch?: Batch
+  initialValues?: Partial<BatchFormValues>
 }
 
 const statusOptions = [
@@ -51,7 +52,7 @@ const statusOptions = [
   { label: "Completed", value: "completed" },
 ]
 
-export function BatchForm({ mode = 'create', batch }: BatchFormProps) {
+export function BatchForm({ mode = 'create', batch, initialValues: propInitialValues }: BatchFormProps) {
   const router = useRouter()
   const { toast } = useToast()
   const [streams, setStreams] = useState<Stream[]>([])
@@ -78,46 +79,106 @@ export function BatchForm({ mode = 'create', batch }: BatchFormProps) {
     fetchData()
   }, [toast])
 
-  // Load initial streams and programs if editing a batch
-  useEffect(() => {
-    if (mode === 'edit' && batch?.university && batch?.start_year) {
-      const universityId = typeof batch.university === 'object' ? batch.university.id : batch.university
-      const university = universities.find(u => u.id.toString() === universityId.toString())
-      if (university) {
-        setSelectedUniversity(university)
-        // Load streams and programs that have contracts for this university and year
-        Promise.all([
-          getStreamsWithContracts(university.id.toString(), batch.start_year.toString()),
-          getProgramsWithContracts(university.id.toString(), batch.start_year.toString())
-        ]).then(([streamsData, programsData]) => {
-          setStreams(streamsData)
-          setPrograms(programsData.map(program => ({
-            id: program.id.toString(),
-            name: program.name
-          })))
-        }).catch(error => {
-          console.error('Failed to load data:', error)
-        })
-      }
+
+  // Helper function to increment date by 1 year
+  const incrementDateByYear = (dateString: string | undefined): string => {
+    if (!dateString) {
+      const currentYear = new Date().getFullYear()
+      return new Date(currentYear, 6, 1).toISOString().split('T')[0]
     }
-  }, [mode, batch, universities])
+    try {
+      const date = new Date(dateString)
+      const newDate = new Date(date.getFullYear() + 1, date.getMonth(), date.getDate())
+      return newDate.toISOString().split('T')[0]
+    } catch {
+      const currentYear = new Date().getFullYear()
+      return new Date(currentYear, 6, 1).toISOString().split('T')[0]
+    }
+  }
 
   const form = useForm<BatchFormValues>({
     resolver: zodResolver(batchFormSchema),
     defaultValues: {
-      name: batch?.name ?? "",
-      university: (batch?.university && typeof batch.university === 'object' ? batch.university.id : batch?.university)?.toString() ?? "",
-      program: (batch?.program && typeof batch.program === 'object' ? batch.program.id : batch?.program)?.toString() ?? "",
-      stream: (batch?.stream && typeof batch.stream === 'object' ? batch.stream.id : batch?.stream)?.toString() ?? "",
-      number_of_students: batch?.number_of_students?.toString() ?? "",
-      start_year: batch?.start_year?.toString() ?? new Date().getFullYear().toString(),
-      end_year: batch?.end_year?.toString() ?? (new Date().getFullYear() + 1).toString(),
-      start_date: batch?.start_date ?? new Date(new Date().getFullYear(), 6, 1).toISOString().split('T')[0], // July 1st of current year
-      end_date: batch?.end_date ?? new Date(new Date().getFullYear() + 1, 5, 30).toISOString().split('T')[0], // June 30th of next year
-      status: batch?.status as "ongoing" | "planned" | "completed" | undefined ?? "planned",
-      notes: batch?.notes ?? "",
+      name: propInitialValues?.name ?? batch?.name ?? "",
+      university: propInitialValues?.university ?? (batch?.university && typeof batch.university === 'object' ? batch.university.id : batch?.university)?.toString() ?? "",
+      // Don't set program/stream from initial values in defaultValues - we'll set them after lists are loaded
+      program: (propInitialValues ? '' : (batch?.program && typeof batch.program === 'object' ? batch.program.id : batch?.program)?.toString()) ?? "",
+      stream: (propInitialValues ? '' : (batch?.stream && typeof batch.stream === 'object' ? batch.stream.id : batch?.stream)?.toString()) ?? "",
+      number_of_students: propInitialValues?.number_of_students ?? batch?.number_of_students?.toString() ?? "",
+      start_year: propInitialValues?.start_year ?? batch?.start_year?.toString() ?? new Date().getFullYear().toString(),
+      end_year: propInitialValues?.end_year ?? batch?.end_year?.toString() ?? (new Date().getFullYear() + 1).toString(),
+      start_date: propInitialValues?.start_date && propInitialValues.start_date !== '' ? incrementDateByYear(propInitialValues.start_date) : (batch?.start_date ?? new Date(new Date().getFullYear(), 6, 1).toISOString().split('T')[0]),
+      end_date: propInitialValues?.end_date && propInitialValues.end_date !== '' ? incrementDateByYear(propInitialValues.end_date) : (batch?.end_date ?? new Date(new Date().getFullYear() + 1, 5, 30).toISOString().split('T')[0]),
+      status: (propInitialValues?.status ?? batch?.status) as "ongoing" | "planned" | "completed" | undefined ?? "planned",
+      notes: propInitialValues?.notes ?? batch?.notes ?? "",
     },
   })
+
+  // Load initial streams and programs if editing a batch or if initial values are provided
+  useEffect(() => {
+    const loadStreamsAndPrograms = async (universityId: string, year: string, preserveProgram?: string, preserveStream?: string) => {
+      const university = universities.find(u => u.id.toString() === universityId)
+      if (university) {
+        setSelectedUniversity(university)
+        try {
+          const [streamsData, programsData] = await Promise.all([
+            getStreamsWithContracts(university.id.toString(), year),
+            getProgramsWithContracts(university.id.toString(), year)
+          ])
+          setStreams(streamsData)
+          const mappedPrograms = programsData.map(program => ({
+            id: program.id.toString(),
+            name: program.name
+          }))
+          setPrograms(mappedPrograms)
+          
+          // If we're preserving program and stream values (from initial values), set them after lists are loaded
+          if (preserveProgram && preserveStream) {
+            // Verify the program and stream exist in the loaded lists
+            const programExists = mappedPrograms.some(p => p.id === preserveProgram)
+            const streamExists = streamsData.some(s => s.id.toString() === preserveStream)
+            
+            // Set the values even if they don't exist in the current year's contracts
+            // The backend validation will catch if there's no contract for the new year
+            // Use setTimeout to ensure state updates are complete
+            setTimeout(() => {
+              form.setValue('program', preserveProgram, { shouldValidate: false, shouldDirty: false })
+              form.setValue('stream', preserveStream, { shouldValidate: false, shouldDirty: false })
+              
+              // If they don't exist in the lists, also ensure they're still set (might need to add to lists)
+              if (!programExists || !streamExists) {
+                console.warn('Program or stream from initial values not found in loaded lists for year', year, {
+                  program: preserveProgram,
+                  stream: preserveStream,
+                  availablePrograms: mappedPrograms.map(p => p.id),
+                  availableStreams: streamsData.map(s => s.id.toString())
+                })
+                // The values are already set, Select components should still show them
+              }
+            }, 200)
+          }
+        } catch (error) {
+          console.error('Failed to load data:', error)
+        }
+      }
+    }
+
+    // Only run if universities are loaded
+    if (universities.length === 0) return
+
+    if (mode === 'edit' && batch?.university && batch?.start_year) {
+      const universityId = typeof batch.university === 'object' ? batch.university.id : batch.university
+      loadStreamsAndPrograms(universityId.toString(), batch.start_year.toString())
+    } else if (mode === 'create' && propInitialValues?.university && propInitialValues?.start_year) {
+      // Load streams and programs when initial values are provided (duplicate scenario)
+      loadStreamsAndPrograms(
+        propInitialValues.university,
+        propInitialValues.start_year,
+        propInitialValues.program,
+        propInitialValues.stream
+      )
+    }
+  }, [mode, batch, universities, propInitialValues, form])
 
   // Watch form state
   const formValues = form.watch()
@@ -168,12 +229,18 @@ export function BatchForm({ mode = 'create', batch }: BatchFormProps) {
               }))
               setPrograms(mappedPrograms)
               
-              // Always reset program and stream when year changes
-              form.setValue('program', '', { shouldValidate: false, shouldDirty: false })
-              form.setValue('stream', '', { shouldValidate: false, shouldDirty: false })
+              // Only reset program and stream if the year actually changed (not on initial load)
+              const currentProgram = form.getValues('program')
+              const currentStream = form.getValues('stream')
               
-              // Clear errors after reset
-              form.clearErrors(['program', 'stream'])
+              // Reset only if year changed and we don't have initial values to preserve
+              if (!propInitialValues || !propInitialValues.program) {
+                if (!currentProgram || !streamsWithContracts.find(s => s.id.toString() === currentStream)) {
+                  form.setValue('program', '', { shouldValidate: false, shouldDirty: false })
+                  form.setValue('stream', '', { shouldValidate: false, shouldDirty: false })
+                  form.clearErrors(['program', 'stream'])
+                }
+              }
               
             } catch (fetchError) {
               console.error('Failed to fetch data:', fetchError)

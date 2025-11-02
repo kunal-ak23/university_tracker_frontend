@@ -44,8 +44,10 @@ export const apiClient = {
         })
 
         if (!refreshResponse.ok) {
-          await signOut()
-          throw new Error('Refresh token expired. Please login again.')
+          // Clear session and redirect to login
+          await signOut({ redirect: true, callbackUrl: '/login?error=session_expired' })
+          // Return early to prevent further execution
+          return Promise.reject(new Error('Refresh token expired. Please login again.'))
         }
 
         const { access: newAccessToken } = await refreshResponse.json()
@@ -62,8 +64,9 @@ export const apiClient = {
           })
         )
       } catch (error) {
-        await signOut()
-        throw error
+        // If refresh failed, clear session and redirect
+        await signOut({ redirect: true, callbackUrl: '/login?error=session_expired' })
+        return Promise.reject(error)
       }
     }
 

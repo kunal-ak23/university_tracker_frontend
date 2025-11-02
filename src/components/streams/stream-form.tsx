@@ -65,6 +65,7 @@ export function StreamForm({ mode = 'create', stream, universityId }: StreamForm
           title: "Success",
           description: "Stream updated successfully",
         })
+        router.push(`/universities/${universityId}/streams`)
       } else {
         // @ts-ignore 
         await createStream(universityId, data)
@@ -72,8 +73,8 @@ export function StreamForm({ mode = 'create', stream, universityId }: StreamForm
           title: "Success",
           description: "Stream created successfully",
         })
+        router.push(`/universities/${universityId}`)
       }
-      router.push(`/universities/${universityId}/streams`)
       router.refresh()
     } catch (error) {
       console.error(`Failed to ${mode} stream:`, error)

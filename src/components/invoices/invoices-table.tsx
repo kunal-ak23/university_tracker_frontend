@@ -110,12 +110,9 @@ export function InvoicesTable({
       header: "Invoice ID",
       accessorKey: "id",
       cell: ({ row }) => (
-        <Link
-          href={`/invoices/${row.original.id}`}
-          className="text-blue-500 hover:underline"
-        >
+        <span className="text-blue-500">
           {row.original.id}
-        </Link>
+        </span>
       ),
     },
     {
@@ -159,7 +156,7 @@ export function InvoicesTable({
 
         return (
           <TooltipProvider>
-            <div className="flex gap-2">
+            <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -180,7 +177,10 @@ export function InvoicesTable({
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => router.push(`/invoices/${invoice.id}/edit`)}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      router.push(`/invoices/${invoice.id}/edit`)
+                    }}
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
@@ -195,7 +195,8 @@ export function InvoicesTable({
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation()
                       setSelectedInvoiceId(invoice.id)
                       setIsPaymentDialogOpen(true)
                     }}
@@ -214,7 +215,8 @@ export function InvoicesTable({
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation()
                       setSelectedInvoiceId(invoice.id)
                       setIsDeleteDialogOpen(true)
                     }}
@@ -247,6 +249,7 @@ export function InvoicesTable({
         onPageChange={onPageChange}
         totalCount={totalCount}
         pageSize={25}
+        onRowClick={(invoice) => router.push(`/invoices/${invoice.id}`)}
       />
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
