@@ -34,6 +34,8 @@ interface ProgramFormProps {
   mode?: 'create' | 'edit'
   program?: Program
   providerId?: number
+  onSuccess?: () => void
+  onCancel?: () => void
 }
 
 const durationUnits: DurationUnit[] = ["Years", "Months", "Weeks", "Days"]
@@ -55,7 +57,7 @@ function generateProgramCode(oemName: string, programName: string): string {
   return `${oemPrefix}_${programSuffix}`
 }
 
-export function ProgramForm({ mode = 'create', program, providerId }: ProgramFormProps) {
+export function ProgramForm({ mode = 'create', program, providerId, onSuccess, onCancel }: ProgramFormProps) {
   const router = useRouter()
   const { toast } = useToast()
   const [oems, setOEMs] = useState<OEM[]>([])
@@ -129,16 +131,24 @@ export function ProgramForm({ mode = 'create', program, providerId }: ProgramFor
           title: "Success",
           description: "Program updated successfully",
         })
-        router.back()
-        router.refresh()
+        if (onSuccess) {
+          onSuccess()
+        } else {
+          router.back()
+          router.refresh()
+        }
       } else {
         await createProgram(data)
         toast({
           title: "Success",
           description: "Program created successfully",
         })
-        router.back()
-        router.refresh()
+        if (onSuccess) {
+          onSuccess()
+        } else {
+          router.back()
+          router.refresh()
+        }
       }
     } catch (error) {
       console.error(`Failed to ${mode} program:`, error)
@@ -358,7 +368,13 @@ export function ProgramForm({ mode = 'create', program, providerId }: ProgramFor
           <Button
             type="button"
             variant="outline"
-            onClick={() => router.back()}
+            onClick={() => {
+              if (onCancel) {
+                onCancel()
+              } else {
+                router.back()
+              }
+            }}
           >
             Cancel
           </Button>

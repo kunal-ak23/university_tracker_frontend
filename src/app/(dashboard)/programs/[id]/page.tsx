@@ -23,7 +23,7 @@ export default async function ProgramPage({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">{program.name}</h2>
-        <ProgramActions programId={program.id} />
+        <ProgramActions programId={program.id} providerId={program.provider?.id} />
       </div>
 
       <div className="grid grid-cols-2 gap-6">

@@ -90,12 +90,6 @@ export const sidebarConfig: SidebarSection[] = [
         roles: ["admin", "provider_poc"],
       },
       {
-        title: "Programs",
-        href: "/programs",
-        icon: BookOpen,
-        roles: ["admin", "provider_poc"],
-      },
-      {
         title: "Batches",
         href: "/batches",
         icon: FileText,

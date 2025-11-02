@@ -8,9 +8,10 @@ import { useToast } from "@/hooks/use-toast"
 
 interface OEMProgramsListProps {
   oemId: number
+  refreshTrigger?: number
 }
 
-export function OEMProgramsList({ oemId }: OEMProgramsListProps) {
+export function OEMProgramsList({ oemId, refreshTrigger }: OEMProgramsListProps) {
   const { toast } = useToast()
   const [programs, setPrograms] = useState<Program[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -55,7 +56,7 @@ export function OEMProgramsList({ oemId }: OEMProgramsListProps) {
       ? `${sortDirection === 'desc' ? '-' : ''}${sortColumn}`
       : undefined
     fetchPrograms(currentPage, searchQuery, ordering)
-  }, [currentPage, searchQuery, sortColumn, sortDirection, toast, oemId])
+  }, [currentPage, searchQuery, sortColumn, sortDirection, toast, oemId, refreshTrigger])
 
   const handleSearch = (query: string) => {
     setSearchQuery(query)

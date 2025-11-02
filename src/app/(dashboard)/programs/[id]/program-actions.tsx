@@ -17,9 +17,10 @@ import {
 
 interface ProgramActionsProps {
   programId: number
+  providerId?: number
 }
 
-export function ProgramActions({ programId }: ProgramActionsProps) {
+export function ProgramActions({ programId, providerId }: ProgramActionsProps) {
   const router = useRouter()
   const { toast } = useToast()
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
@@ -69,7 +70,12 @@ export function ProgramActions({ programId }: ProgramActionsProps) {
               title: "Success",
               description: "Program deleted successfully",
             })
-            router.push('/programs')
+            // Redirect to OEM page if providerId is available, otherwise go back
+            if (providerId) {
+              router.push(`/oems/${providerId}`)
+            } else {
+              router.back()
+            }
             router.refresh()
           } catch (error) {
             const errorMessage = error instanceof Error 
