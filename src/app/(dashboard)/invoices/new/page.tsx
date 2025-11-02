@@ -1,6 +1,13 @@
 import { InvoiceForm } from "@/components/forms/invoice/invoice-form"
 
-export default function NewInvoicePage() {
+export default async function NewInvoicePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ billing?: string }>
+}) {
+  const params = await searchParams
+  const billingId = params?.billing
+  
   return (
     <div className="space-y-6">
       <div>
@@ -9,7 +16,7 @@ export default function NewInvoicePage() {
           Create a new invoice by filling out the form below.
         </p>
       </div>
-      <InvoiceForm />
+      <InvoiceForm initialBillingId={billingId} />
     </div>
   )
 } 

@@ -65,9 +65,10 @@ type FormData = z.infer<typeof formSchema>
 
 interface InvoiceFormProps {
   invoice?: Invoice
+  initialBillingId?: string
 }
 
-export function InvoiceForm({ invoice }: InvoiceFormProps) {
+export function InvoiceForm({ invoice, initialBillingId }: InvoiceFormProps) {
   const router = useRouter()
   const { toast } = useToast()
   const { navigateBack } = useReturnNavigation()
@@ -84,7 +85,7 @@ export function InvoiceForm({ invoice }: InvoiceFormProps) {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      billing: invoice?.billing ? String(invoice.billing) : '',
+      billing: invoice?.billing ? String(invoice.billing) : (initialBillingId || ''),
       name: invoice?.name || '',
       issue_date: invoice?.issue_date ? new Date(invoice.issue_date) : new Date(),
       due_date: invoice?.due_date ? new Date(invoice.due_date) : new Date(),
@@ -126,6 +127,13 @@ export function InvoiceForm({ invoice }: InvoiceFormProps) {
   useEffect(() => {
     loadBillings(1)
   }, [])
+
+  // Set initial billing if provided
+  useEffect(() => {
+    if (initialBillingId && !invoice) {
+      form.setValue('billing', initialBillingId)
+    }
+  }, [initialBillingId, invoice, form])
 
   // Handle search
   useEffect(() => {

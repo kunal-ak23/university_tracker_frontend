@@ -5,7 +5,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { sidebarConfig, UserRole } from "@/config/sidebar"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { PanelLeft } from "lucide-react"
 import { cn } from "@/service/utils"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useSession } from "next-auth/react"
@@ -71,11 +71,7 @@ export function Sidebar({className}: {className?: string}) {
           className="absolute -right-4 top-6 h-8 w-8 rounded-full border bg-background"
           onClick={toggleCollapsed}
         >
-          {isCollapsed ? (
-            <ChevronRight className="h-4 w-4" />
-          ) : (
-            <ChevronLeft className="h-4 w-4" />
-          )}
+          <PanelLeft className="h-4 w-4" />
         </Button>
       </div>
 

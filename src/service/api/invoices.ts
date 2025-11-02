@@ -7,6 +7,7 @@ interface GetInvoicesParams {
   page_size?: number
   search?: string
   ordering?: string
+  billing?: number
 }
 
 export async function getInvoices(params: GetInvoicesParams = {}): Promise<PaginatedResponse<Invoice>> {
@@ -15,6 +16,7 @@ export async function getInvoices(params: GetInvoicesParams = {}): Promise<Pagin
   if (params.page_size) searchParams.append('page_size', params.page_size.toString())
   if (params.search) searchParams.append('search', params.search)
   if (params.ordering) searchParams.append('ordering', params.ordering)
+  if (params.billing) searchParams.append('billing', params.billing.toString())
 
   return apiFetch(`/invoices/?${searchParams.toString()}`)
 }

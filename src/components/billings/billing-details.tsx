@@ -3,9 +3,11 @@
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
-import { Pencil, IndianRupee, Receipt, Users, Percent } from "lucide-react"
+import { Pencil, IndianRupee, Receipt, Users, Percent, ArrowLeft } from "lucide-react"
 import { BillingActions } from "@/app/(dashboard)/billings/[id]/actions"
 import { Billing } from "@/types/billing"
+import { BillingInvoicesSection } from "./invoices-section"
+import { useRouter } from "next/navigation"
 
 interface BillingDetailsProps {
   billing: Billing
@@ -47,10 +49,20 @@ function formatDate(dateString: string) {
 }
 
 export function BillingDetails({ billing }: BillingDetailsProps) {
+  const router = useRouter()
+  
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.back()}
+            className="h-8 w-8"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
           <h2 className="text-3xl font-bold tracking-tight">{billing.name}</h2>
           <Badge variant={getStatusBadgeVariant(billing.status, billing.balance_due)}>
             {getStatusLabel(billing.status, billing.balance_due)}
@@ -188,6 +200,11 @@ export function BillingDetails({ billing }: BillingDetailsProps) {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Invoices Section */}
+      <div className="rounded-lg border p-6 space-y-6">
+        <BillingInvoicesSection billingId={billing.id} />
       </div>
 
       {/* Notes Section */}

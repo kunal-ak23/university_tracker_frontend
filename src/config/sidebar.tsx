@@ -132,18 +132,6 @@ export const sidebarConfig: SidebarSection[] = [
         roles: ["admin"],
       },
       {
-        title: "Invoices",
-        href: "/invoices",
-        icon: FileText,
-        roles: ["admin"],
-      },
-      {
-        title: "Payments",
-        href: "/payments",
-        icon: CreditCard,
-        roles: ["admin"],
-      },
-      {
         title: "Expenses",
         href: "/expenses",
         icon: BarChart3,
