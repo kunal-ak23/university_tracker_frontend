@@ -104,7 +104,6 @@ export function UniversityBatchesSection({ universityId }: UniversityBatchesSect
           sortDirection={sortDirection}
           hasNextPage={currentPage < totalPages}
           hasPreviousPage={currentPage > 1}
-          totalCount={totalCount}
         />
       </Suspense>
     </div>

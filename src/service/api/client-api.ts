@@ -11,7 +11,6 @@ class ClientAPIClient {
     const session = await getSession()
     return {
       "Content-Type": "application/json",
-      // @ts-ignore
       ...(session?.accessToken
         ? { Authorization: `Bearer ${session.accessToken}` }
         : {}),

@@ -7,6 +7,12 @@ export default function NewBatchPage() {
   const searchParams = useSearchParams()
   
   // Get initial values from URL params if they exist (for duplicating)
+  const statusParam = searchParams.get('status')
+  const validStatuses = ['planned', 'ongoing', 'completed'] as const
+  const status = statusParam && validStatuses.includes(statusParam as typeof validStatuses[number])
+    ? (statusParam as 'planned' | 'ongoing' | 'completed')
+    : 'planned'
+
   const initialValues = searchParams.get('copyFrom') ? {
     university: searchParams.get('university') || '',
     program: searchParams.get('program') || '',
@@ -17,7 +23,7 @@ export default function NewBatchPage() {
     end_year: searchParams.get('end_year') ? String(parseInt(searchParams.get('end_year')!) + 1) : '',
     start_date: searchParams.get('start_date') || '', // Will be incremented by 1 year in form
     end_date: searchParams.get('end_date') || '', // Will be incremented by 1 year in form
-    status: searchParams.get('status') || 'planned',
+    status,
     notes: searchParams.get('notes') || '',
   } : undefined
 

@@ -70,13 +70,13 @@ export function BatchesTable({
       const params = new URLSearchParams()
       params.set('copyFrom', 'true')
       
-      const universityId = typeof batchData.university === 'object' 
+      const universityId = typeof batchData.university === 'object' && batchData.university !== null
         ? batchData.university.id.toString() 
         : batchData.university?.toString() || ''
-      const streamId = typeof batchData.stream === 'object' 
+      const streamId = typeof batchData.stream === 'object' && batchData.stream !== null
         ? batchData.stream.id.toString() 
         : batchData.stream?.toString() || ''
-      const programId = typeof batchData.program === 'object' 
+      const programId = typeof batchData.program === 'object' && batchData.program !== null
         ? batchData.program.id.toString() 
         : batchData.program?.toString() || ''
       

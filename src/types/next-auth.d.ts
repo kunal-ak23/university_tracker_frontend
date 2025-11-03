@@ -10,5 +10,12 @@ declare module 'next-auth' {
     is_superuser?: boolean
     is_staff?: boolean
     is_active?: boolean
+    accessToken?: string
+    refreshToken?: string
+  }
+
+  interface Session {
+    accessToken?: string
+    refreshToken?: string
   }
 } 

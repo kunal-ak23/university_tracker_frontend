@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { format } from "date-fns"
 import { getLedgerEntries, getLedgerSummary } from "@/service/api/ledger"
-import type { PaymentLedgerEntry, LedgerSummary } from "@/types/ledger"
+import type { PaymentLedger, LedgerSummary } from "@/types/ledger"
 
 interface UniversityLedgerCardProps {
   universityId: string
@@ -19,7 +19,7 @@ export function UniversityLedgerCard({ universityId }: UniversityLedgerCardProps
   const router = useRouter()
   const [selectedPeriod, setSelectedPeriod] = useState<string>("current_year")
   const [ledgerSummary, setLedgerSummary] = useState<LedgerSummary | null>(null)
-  const [recentTransactions, setRecentTransactions] = useState<PaymentLedgerEntry[]>([])
+  const [recentTransactions, setRecentTransactions] = useState<PaymentLedger[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -200,7 +200,7 @@ export function UniversityLedgerCard({ universityId }: UniversityLedgerCardProps
                 <h4 className="font-medium">Total Income</h4>
               </div>
               <p className="text-2xl font-bold text-green-600">
-                {formatCurrency(ledgerSummary.total_income || 0)}
+                {formatCurrency(ledgerSummary.income?.total || 0)}
               </p>
             </div>
             <div className="rounded-lg border p-4 space-y-2">
@@ -209,7 +209,7 @@ export function UniversityLedgerCard({ universityId }: UniversityLedgerCardProps
                 <h4 className="font-medium">Total Expenses</h4>
               </div>
               <p className="text-2xl font-bold text-red-600">
-                {formatCurrency(ledgerSummary.total_expenses || 0)}
+                {formatCurrency(ledgerSummary.expenses?.total || 0)}
               </p>
             </div>
             <div className="rounded-lg border p-4 space-y-2">
@@ -218,9 +218,9 @@ export function UniversityLedgerCard({ universityId }: UniversityLedgerCardProps
                 <h4 className="font-medium">Net Profit/Loss</h4>
               </div>
               <p className={`text-2xl font-bold ${
-                (ledgerSummary.net_profit_loss || 0) >= 0 ? 'text-green-600' : 'text-red-600'
+                (ledgerSummary.profit_loss || 0) >= 0 ? 'text-green-600' : 'text-red-600'
               }`}>
-                {formatCurrency(ledgerSummary.net_profit_loss || 0)}
+                {formatCurrency(ledgerSummary.profit_loss || 0)}
               </p>
             </div>
           </div>
