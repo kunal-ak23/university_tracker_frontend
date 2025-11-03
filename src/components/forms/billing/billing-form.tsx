@@ -180,18 +180,21 @@ export function BillingForm({ mode = 'create', billing, availableBatches }: Bill
           let oem: OEM | null = null
           let oemId: string
           
-          if (typeof batch.oem === 'object' && batch.oem !== null) {
-            // OEM is an object
-            oem = batch.oem
-            oemId = typeof batch.oem.id === 'string' ? batch.oem.id : batch.oem.id.toString()
-          } else if (typeof batch.oem === 'number') {
+          // Handle different possible types for batch.oem (API might return different formats)
+          const oemValue = batch.oem as unknown
+          
+          if (typeof oemValue === 'object' && oemValue !== null) {
+            // OEM is an object - id is always a string in OEM type
+            oem = oemValue as OEM
+            oemId = oem.id
+          } else if (typeof oemValue === 'number') {
             // OEM is just an ID number - we'd need to fetch it, but for now create a placeholder
-            oemId = batch.oem.toString()
+            oemId = oemValue.toString()
             // We can't create a full OEM object from just an ID without fetching
             // This shouldn't happen if serializer is working correctly
-            console.warn('Batch has OEM as number ID only:', batch.oem)
-          } else if (typeof batch.oem === 'string') {
-            oemId = batch.oem
+            console.warn('Batch has OEM as number ID only:', oemValue)
+          } else if (typeof oemValue === 'string') {
+            oemId = oemValue
           } else {
             return // Skip if OEM is not in expected format
           }
@@ -209,7 +212,7 @@ export function BillingForm({ mode = 'create', billing, availableBatches }: Bill
       
       // Auto-select OEM if only one exists
       if (uniqueOEMs.length === 1 && !selectedOEM) {
-        const singleOEMId = typeof uniqueOEMs[0].id === 'string' ? uniqueOEMs[0].id : uniqueOEMs[0].id.toString()
+        const singleOEMId = uniqueOEMs[0].id
         form.setValue('oem', singleOEMId)
       } else if (uniqueOEMs.length === 0 && selectedOEM) {
         // Clear OEM selection if no OEMs found
@@ -221,12 +224,17 @@ export function BillingForm({ mode = 'create', billing, availableBatches }: Bill
         filtered = filtered.filter(batch => {
           if (!batch.oem) return false
           let batchOEMId: string
-          if (typeof batch.oem === 'object' && batch.oem !== null) {
-            batchOEMId = typeof batch.oem.id === 'string' ? batch.oem.id : batch.oem.id.toString()
-          } else if (typeof batch.oem === 'number') {
-            batchOEMId = batch.oem.toString()
-          } else if (typeof batch.oem === 'string') {
-            batchOEMId = batch.oem
+          
+          // Handle different possible types for batch.oem (API might return different formats)
+          const oemValue = batch.oem as unknown
+          
+          if (typeof oemValue === 'object' && oemValue !== null) {
+            // OEM is an object - id is always a string in OEM type
+            batchOEMId = (oemValue as OEM).id
+          } else if (typeof oemValue === 'number') {
+            batchOEMId = oemValue.toString()
+          } else if (typeof oemValue === 'string') {
+            batchOEMId = oemValue
           } else {
             return false
           }
@@ -238,7 +246,11 @@ export function BillingForm({ mode = 'create', billing, availableBatches }: Bill
       const batchesByOEMMap = new Map<number, Batch[]>()
       filtered.forEach(batch => {
         if (batch.oem) {
-          const oemId = typeof batch.oem === 'object' ? (typeof batch.oem.id === 'string' ? parseInt(batch.oem.id) : batch.oem.id) : (typeof batch.oem === 'string' ? parseInt(batch.oem) : batch.oem)
+          // Convert OEM ID to number for grouping (OEM.id is always string)
+          const oemValue = batch.oem as unknown
+          const oemId = typeof oemValue === 'object' && oemValue !== null 
+            ? parseInt((oemValue as OEM).id) 
+            : (typeof oemValue === 'string' ? parseInt(oemValue) : (typeof oemValue === 'number' ? oemValue : 0))
           if (!batchesByOEMMap.has(oemId)) {
             batchesByOEMMap.set(oemId, [])
           }
@@ -446,7 +458,7 @@ export function BillingForm({ mode = 'create', billing, availableBatches }: Bill
                 <FormLabel>OEM{availableOEMs.length > 1 ? ' (select one)' : ''}</FormLabel>
                 <Select 
                   onValueChange={field.onChange} 
-                  value={field.value || (availableOEMs.length === 1 ? (typeof availableOEMs[0].id === 'string' ? availableOEMs[0].id : availableOEMs[0].id.toString()) : '')}
+                  value={field.value || (availableOEMs.length === 1 ? availableOEMs[0].id : '')}
                   disabled={availableOEMs.length === 1}
                 >
                   <FormControl>
@@ -457,8 +469,8 @@ export function BillingForm({ mode = 'create', billing, availableBatches }: Bill
                   <SelectContent>
                     {availableOEMs.map((oem) => (
                       <SelectItem 
-                        key={typeof oem.id === 'string' ? oem.id : oem.id.toString()} 
-                        value={typeof oem.id === 'string' ? oem.id : oem.id.toString()}
+                        key={oem.id} 
+                        value={oem.id}
                       >
                         {oem.name}
                       </SelectItem>
