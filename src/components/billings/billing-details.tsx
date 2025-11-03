@@ -129,8 +129,8 @@ export function BillingDetails({ billing }: BillingDetailsProps) {
       <div className="rounded-lg border p-6 space-y-4">
         <h3 className="text-xl font-semibold">Included Batches</h3>
         <div className="grid grid-cols-3 gap-4">
-          {billing.batch_snapshots.map((batch, index) => (
-            <div key={"batch-" + index} className="rounded-lg border p-4 space-y-3">
+          {billing.batch_snapshots.map((batch) => (
+            <div key={batch.id} className="rounded-lg border p-4 space-y-3">
               <div className="flex justify-between items-start">
                 <h4 className="font-semibold">{batch.batch_name}</h4>
                 <Badge variant="secondary">

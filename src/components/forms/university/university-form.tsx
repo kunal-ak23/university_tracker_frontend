@@ -288,9 +288,9 @@ export function UniversityForm({ mode = 'create', university }: UniversityFormPr
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {pocs.map((poc, index) => (
+                    {pocs.map((poc) => (
                       <SelectItem 
-                        key={"poc" + index} 
+                        key={poc.id} 
                         value={poc.id.toString()}
                       >
                         {poc.full_name || poc.username}

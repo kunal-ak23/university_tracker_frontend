@@ -18,6 +18,7 @@ import { createBilling, updateBilling, publishBilling } from "@/service/api/bill
 import { Batch } from "@/types/batch"
 import { getUniversities } from "@/service/api/universities"
 import { University } from "@/types/university"
+import { OEM } from "@/types/oem"
 import { Badge } from "@/components/ui/badge"
 import { Users, Calendar, IndianRupee, Percent } from "lucide-react"
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
@@ -26,6 +27,7 @@ const billingFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
   university: z.string().min(1, "University is required"),
   year: z.string().min(1, "Year is required"),
+  oem: z.string().optional(),
   batches: z.array(z.string()).min(1, "At least one batch is required"),
   notes: z.string().optional(),
 })
@@ -106,6 +108,8 @@ export function BillingForm({ mode = 'create', billing, availableBatches }: Bill
   )
   const [universities, setUniversities] = useState<University[]>([])
   const [filteredBatches, setFilteredBatches] = useState<Batch[]>(availableBatches)
+  const [availableOEMs, setAvailableOEMs] = useState<OEM[]>([])
+  const [batchesByOEM, setBatchesByOEM] = useState<Map<number, Batch[]>>(new Map())
 
   const form = useForm<BillingFormValues>({
     resolver: zodResolver(billingFormSchema),
@@ -113,6 +117,7 @@ export function BillingForm({ mode = 'create', billing, availableBatches }: Bill
       name: billing?.name ?? "",
       university: "", // Will be set via useEffect
       year: new Date().getFullYear().toString(), // Will be set via useEffect
+      oem: "",
       notes: billing?.notes ?? "",
       batches: selectedBatches,
     },
@@ -151,13 +156,15 @@ export function BillingForm({ mode = 'create', billing, availableBatches }: Bill
     fetchUniversities()
   }, [toast])
 
-  // Filter batches based on selected university and year
+  // Filter batches based on selected university and year, extract OEMs
   useEffect(() => {
     const university = form.watch('university')
     const year = form.watch('year')
+    const selectedOEM = form.watch('oem')
     
     if (university && year) {
-      const filtered = availableBatches.filter(batch => {
+      // First filter by university and year
+      let filtered = availableBatches.filter(batch => {
         const universityId = typeof batch.university === 'object' 
           ? batch.university?.id?.toString() 
           : batch.university?.toString()
@@ -165,18 +172,99 @@ export function BillingForm({ mode = 'create', billing, availableBatches }: Bill
                batch.start_year <= parseInt(year) && 
                batch.end_year >= parseInt(year)
       })
+      
+      // Extract unique OEMs from filtered batches
+      const oemMap = new Map<string, OEM>()
+      filtered.forEach(batch => {
+        if (batch.oem) {
+          let oem: OEM | null = null
+          let oemId: string
+          
+          if (typeof batch.oem === 'object' && batch.oem !== null) {
+            // OEM is an object
+            oem = batch.oem
+            oemId = typeof batch.oem.id === 'string' ? batch.oem.id : batch.oem.id.toString()
+          } else if (typeof batch.oem === 'number') {
+            // OEM is just an ID number - we'd need to fetch it, but for now create a placeholder
+            oemId = batch.oem.toString()
+            // We can't create a full OEM object from just an ID without fetching
+            // This shouldn't happen if serializer is working correctly
+            console.warn('Batch has OEM as number ID only:', batch.oem)
+          } else if (typeof batch.oem === 'string') {
+            oemId = batch.oem
+          } else {
+            return // Skip if OEM is not in expected format
+          }
+          
+          if (oem && oemId && !oemMap.has(oemId)) {
+            oemMap.set(oemId, oem)
+          }
+        }
+      })
+      
+      const uniqueOEMs = Array.from(oemMap.values())
+      console.log('Extracted OEMs from batches:', uniqueOEMs.length, uniqueOEMs)
+      console.log('Filtered batches sample:', filtered.slice(0, 3).map(b => ({ id: b.id, name: b.name, oem: b.oem })))
+      setAvailableOEMs(uniqueOEMs)
+      
+      // Auto-select OEM if only one exists
+      if (uniqueOEMs.length === 1 && !selectedOEM) {
+        const singleOEMId = typeof uniqueOEMs[0].id === 'string' ? uniqueOEMs[0].id : uniqueOEMs[0].id.toString()
+        form.setValue('oem', singleOEMId)
+      } else if (uniqueOEMs.length === 0 && selectedOEM) {
+        // Clear OEM selection if no OEMs found
+        form.setValue('oem', '')
+      }
+      
+      // Filter by OEM if selected
+      if (selectedOEM) {
+        filtered = filtered.filter(batch => {
+          if (!batch.oem) return false
+          let batchOEMId: string
+          if (typeof batch.oem === 'object' && batch.oem !== null) {
+            batchOEMId = typeof batch.oem.id === 'string' ? batch.oem.id : batch.oem.id.toString()
+          } else if (typeof batch.oem === 'number') {
+            batchOEMId = batch.oem.toString()
+          } else if (typeof batch.oem === 'string') {
+            batchOEMId = batch.oem
+          } else {
+            return false
+          }
+          return batchOEMId === selectedOEM
+        })
+      }
+      
+      // Group batches by OEM for reference
+      const batchesByOEMMap = new Map<number, Batch[]>()
+      filtered.forEach(batch => {
+        if (batch.oem) {
+          const oemId = typeof batch.oem === 'object' ? (typeof batch.oem.id === 'string' ? parseInt(batch.oem.id) : batch.oem.id) : (typeof batch.oem === 'string' ? parseInt(batch.oem) : batch.oem)
+          if (!batchesByOEMMap.has(oemId)) {
+            batchesByOEMMap.set(oemId, [])
+          }
+          batchesByOEMMap.get(oemId)!.push(batch)
+        }
+      })
+      setBatchesByOEM(batchesByOEMMap)
+      
       setFilteredBatches(filtered)
       
-      // Auto-select all filtered batches when university or year changes
+      // Auto-select all filtered batches when university, year, or OEM changes
       const filteredBatchIds = filtered.map(batch => batch.id.toString())
       if (filteredBatchIds.length > 0) {
         setSelectedBatches(filteredBatchIds)
         form.setValue('batches', filteredBatchIds)
+      } else {
+        // Clear selection if no batches match
+        setSelectedBatches([])
+        form.setValue('batches', [])
       }
     } else {
       setFilteredBatches(availableBatches)
+      setAvailableOEMs([])
+      setBatchesByOEM(new Map())
     }
-  }, [form.watch('university'), form.watch('year'), availableBatches, form])
+  }, [form.watch('university'), form.watch('year'), form.watch('oem'), availableBatches, form])
 
   // Sync selectedBatches with form value when form value changes
   useEffect(() => {
@@ -243,11 +331,11 @@ export function BillingForm({ mode = 'create', billing, availableBatches }: Bill
         setDraftId(response.id)
         toast({
           title: "Success",
-          description: "Draft billing created successfully. You can now review and publish it.",
+          description: "Draft billing created successfully.",
         })
-        // Redirect to edit page with returnTo
+        // Redirect to detail page with returnTo
         const returnTo = getReturnUrl() || '/billings'
-        router.push(`/billings/${response.id}/edit${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ''}`)
+        router.push(`/billings/${response.id}${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ''}`)
         router.refresh()
       }
     } catch (error) {
@@ -347,6 +435,46 @@ export function BillingForm({ mode = 'create', billing, availableBatches }: Bill
             )}
           />
         </div>
+
+        {/* OEM Selection - show if OEMs exist (multiple or single) */}
+        {availableOEMs.length > 0 && (
+          <FormField
+            control={form.control}
+            name="oem"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>OEM{availableOEMs.length > 1 ? ' (select one)' : ''}</FormLabel>
+                <Select 
+                  onValueChange={field.onChange} 
+                  value={field.value || (availableOEMs.length === 1 ? (typeof availableOEMs[0].id === 'string' ? availableOEMs[0].id : availableOEMs[0].id.toString()) : '')}
+                  disabled={availableOEMs.length === 1}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder={availableOEMs.length === 1 ? "OEM (pre-selected)" : "Select OEM"} />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {availableOEMs.map((oem) => (
+                      <SelectItem 
+                        key={typeof oem.id === 'string' ? oem.id : oem.id.toString()} 
+                        value={typeof oem.id === 'string' ? oem.id : oem.id.toString()}
+                      >
+                        {oem.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {availableOEMs.length === 1 && (
+                  <p className="text-sm text-muted-foreground">
+                    Only one OEM found for selected university and year. This OEM will be used for the billing.
+                  </p>
+                )}
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
         <FormField
           control={form.control}

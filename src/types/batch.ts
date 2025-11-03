@@ -2,6 +2,7 @@ import { Contract } from "./contract"
 import { Stream } from "./stream"
 import { University } from "./university"
 import { Program } from "./program"
+import { OEM } from "./oem"
 
 export interface BatchSnapshot {
   id: number
@@ -27,6 +28,7 @@ export interface Batch {
   program: Program | number | null
   stream: Stream | number | null
   contract: Contract | number
+  oem?: OEM | null
   number_of_students: number
   start_year: number
   end_year: number

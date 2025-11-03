@@ -158,8 +158,8 @@ export default async function UniversityPage({
             </Link>
           </div>
           <div className="grid grid-cols-3 gap-4">
-            {streams.map((stream, index) => (
-              <div key={"stream" + index} className="rounded-lg border p-4 space-y-2">
+            {streams.map((stream) => (
+              <div key={stream.id} className="rounded-lg border p-4 space-y-2">
                 <h4 className="font-semibold">{stream.name}</h4>
                 <p className="text-sm text-gray-600">
                   Duration: {stream.duration} {stream.duration_unit}

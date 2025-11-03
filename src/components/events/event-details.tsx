@@ -200,7 +200,7 @@ export function EventDetails({ initialEvent }: EventDetailsProps) {
           <CardContent>
             <div className="flex flex-wrap gap-2">
               {event.invitee_emails?.map((email, index) => (
-                <Badge key={index} variant="outline">
+                <Badge key={`invitee-${email}-${index}`} variant="outline">
                   {email}
                 </Badge>
               ))}

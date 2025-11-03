@@ -121,28 +121,42 @@ export function ContractsTable({
     {
       id: "streams",
       header: "Streams",
-      cell: ({ row }: { row: Row<Contract> }) => (
-        <div className="flex flex-wrap gap-1">
-          {row.original.streams?.map((stream) => (
-            <Badge key={stream.id} variant="outline">
-              {stream.name}
-            </Badge>
-          ))}
-        </div>
-      ),
+      cell: ({ row }: { row: Row<Contract> }) => {
+        // Deduplicate streams by ID to avoid duplicate keys
+        const uniqueStreams = row.original.streams?.filter((stream, index, self) => 
+          index === self.findIndex((s) => s.id === stream.id)
+        ) || []
+        
+        return (
+          <div className="flex flex-wrap gap-1">
+            {uniqueStreams.map((stream, index) => (
+              <Badge key={`${row.original.id}-stream-${stream.id}-${index}`} variant="outline">
+                {stream.name}
+              </Badge>
+            ))}
+          </div>
+        )
+      },
     },
     {
       id: "programs",
       header: "Programs",
-      cell: ({ row }: { row: Row<Contract> }) => (
-        <div className="flex flex-wrap gap-1">
-          {row.original.programs?.map((program) => (
-            <Badge key={program.id} variant="outline">
-              {program.name}
-            </Badge>
-          ))}
-        </div>
-      ),
+      cell: ({ row }: { row: Row<Contract> }) => {
+        // Deduplicate programs by ID to avoid duplicate keys
+        const uniquePrograms = row.original.programs?.filter((program, index, self) => 
+          index === self.findIndex((p) => p.id === program.id)
+        ) || []
+        
+        return (
+          <div className="flex flex-wrap gap-1">
+            {uniquePrograms.map((program, index) => (
+              <Badge key={`${row.original.id}-program-${program.id}-${index}`} variant="outline">
+                {program.name}
+              </Badge>
+            ))}
+          </div>
+        )
+      },
     },
     {
       id: "cost_details",

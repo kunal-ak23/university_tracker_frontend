@@ -51,8 +51,8 @@ const StreamPage = async ({params}: {params: Promise<{
             </Link>
           </div>
           <div className="space-y-4">
-            {batches.map((batch, index) => (
-              <div key={"batch" + index} className="rounded-lg border p-4 space-y-2">
+            {batches.map((batch) => (
+              <div key={batch.id} className="rounded-lg border p-4 space-y-2">
                 <h4 className="font-semibold">{batch.name}</h4>
                 <p className="text-sm text-gray-600">
                   Students: {batch.number_of_students}

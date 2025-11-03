@@ -45,8 +45,8 @@ export default async function StreamsPage({params}: {params: Promise<{
         </Link>
       </div>
       <div className="grid gap-4">
-        {streams.map((stream, index) => (
-          <div key={"Stream" + index} className="rounded-lg border p-6">
+        {streams.map((stream) => (
+          <div key={stream.id} className="rounded-lg border p-6">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-xl font-semibold">{stream.name}</h3>
