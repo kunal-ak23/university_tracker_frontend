@@ -31,7 +31,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { MoreHorizontal, Pencil, Trash, Search } from "lucide-react"
 import { Lead, LeadStatus } from "@/types/lead"
-import { deleteLead } from "@/service/api/leads"
+import { deleteLead } from "@/service/api/leads-client"
 import { DataTablePagination } from "@/components/ui/data-table-pagination"
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header"
 

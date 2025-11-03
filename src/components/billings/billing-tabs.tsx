@@ -1,7 +1,7 @@
 "use client"
 
 import { useDebounce } from "@/hooks/use-debounce"
-import { getBillings } from "@/service/api/billings"
+import { getBillings } from "@/service/api/billings-client"
 import { Plus, Search } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"

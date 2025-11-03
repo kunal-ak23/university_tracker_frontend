@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { formatDate } from "@/service/utils"
 import { Batch } from "@/types/batch"
 import { ColumnDef, Row } from "@tanstack/react-table"
-import { deleteBatch, getBatch } from "@/service/api/batches"
+import { deleteBatch, getBatch } from "@/service/api/batches-client"
 import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import { buildUrlWithReturn } from "@/service/utils/navigation"
 

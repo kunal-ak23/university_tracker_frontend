@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Suspense } from "react"
-import { getBatches } from "@/service/api/batches"
+import { getBatches } from "@/service/api/batches-client"
 import { BatchesTable } from "@/components/batches/batches-table"
 import { Batch } from "@/types/batch"
 import { AddBatchDialogWrapper } from "./add-batch-dialog-wrapper"

@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
+"use client"
+
 import { getSession, signOut } from "next-auth/react";
 import { interceptFetch } from "./interceptor";
 
@@ -6,10 +8,16 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export const apiClient = {
   async fetch(endpoint: string, options: RequestInit = {}) {
+    console.log('[apiClient] fetch called', {
+      endpoint,
+      method: options.method || 'GET',
+      timestamp: new Date().toISOString()
+    })
     const session = await getSession();
     
     // @ts-ignore
     if (!session?.accessToken) {
+      console.error('[apiClient] No access token found')
       throw new Error('No access token found. Please login again.')
     }
 
@@ -20,12 +28,14 @@ export const apiClient = {
       ...options.headers,
     };
 
+    console.log('[apiClient] Calling interceptFetch for:', `${BASE_URL}${endpoint}`)
     let response = await interceptFetch(
       fetch(`${BASE_URL}${endpoint}`, {
         ...options,
         headers,
       })
     );
+    console.log('[apiClient] interceptFetch returned:', response.status)
 
     // If token expired, try to refresh
     // @ts-ignore
@@ -53,6 +63,7 @@ export const apiClient = {
         const { access: newAccessToken } = await refreshResponse.json()
         
         // Retry original request with new token
+        console.log('[apiClient] Retrying request with new token')
         response = await interceptFetch(
           fetch(`${BASE_URL}${endpoint}`, {
             ...options,
@@ -63,6 +74,7 @@ export const apiClient = {
             },
           })
         )
+        console.log('[apiClient] Retry completed:', response.status)
       } catch (error) {
         // If refresh failed, clear session and redirect
         await signOut({ redirect: true, callbackUrl: '/login?error=session_expired' })

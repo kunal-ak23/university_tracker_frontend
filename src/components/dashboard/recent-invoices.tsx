@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { formatCurrency } from "@/service/utils"
-import { getRecentInvoices } from "@/service/api/dashboard"
+import { getRecentInvoices } from "@/service/api/dashboard-client"
 import type { RecentInvoice } from "@/service/api/dashboard"
 
 export function RecentInvoices() {

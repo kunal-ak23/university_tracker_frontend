@@ -24,10 +24,18 @@ export async function postFormDataClient(
   }
 
   const url = `${BASE_URL}${endpoint}`
+  const startTime = Date.now()
+
+  console.log('[postFormDataClient] Starting FormData request', {
+    endpoint,
+    url,
+    timestamp: new Date().toISOString()
+  })
 
   loadingManager.setLoading(true)
   
   try {
+    console.log('[postFormDataClient] Making fetch request')
     let response = await fetch(url, {
       ...options,
       body: formData,
@@ -40,6 +48,7 @@ export async function postFormDataClient(
 
     // If token expired, try to refresh
     if (response.status === 401 && refreshToken) {
+      console.log('[postFormDataClient] Got 401, attempting token refresh')
       try {
         // Call refresh token endpoint directly
         const refreshResponse = await fetch(`${BASE_URL}/auth/refresh/`, {
@@ -60,6 +69,7 @@ export async function postFormDataClient(
 
         const { access: newAccessToken } = await refreshResponse.json()
         
+        console.log('[postFormDataClient] Token refreshed, retrying request')
         // Retry original request with new token
         response = await fetch(url, {
           ...options,
@@ -97,9 +107,26 @@ export async function postFormDataClient(
       return null
     }
 
+    const duration = Date.now() - startTime
+    console.log('[postFormDataClient] Request completed', {
+      status: response.status,
+      duration: `${duration}ms`
+    })
+
     return response.json()
+  } catch (error) {
+    const duration = Date.now() - startTime
+    console.error('[postFormDataClient] Request failed', {
+      error,
+      duration: `${duration}ms`,
+      timestamp: new Date().toISOString()
+    })
+    throw error
   } finally {
+    const duration = Date.now() - startTime
+    console.log('[postFormDataClient] Setting loading to false after', duration, 'ms')
     setTimeout(() => {
+      console.log('[postFormDataClient] Timeout fired, setting loading to false')
       loadingManager.setLoading(false)
     }, 100)
   }

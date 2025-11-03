@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Lead, CreateLeadData, UpdateLeadData, LeadStatus } from "@/types/lead"
-import { createLead, updateLead } from "@/service/api/leads"
+import { createLead, updateLead } from "@/service/api/leads-client"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Suspense } from "react"
-import { getInvoices } from "@/service/api/invoices"
+import { getInvoices } from "@/service/api/invoices-client"
 import { Invoice } from "@/types/payment"
 import { InvoicesTable } from "@/components/invoices/invoices-table"
 import { useToast } from "@/hooks/use-toast"
