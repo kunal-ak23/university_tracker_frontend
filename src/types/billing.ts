@@ -41,8 +41,9 @@ export interface Billing {
 
 export interface BillingCreateInput {
   name: string
-  batches: string[]  // Batch IDs
+  batches: number[]  // Batch IDs as integers for backend
   notes?: string
+  oem?: string  // OEM ID as string (optional, used for filtering/validation when multiple OEMs exist)
 }
 
 export interface BillingResponse {

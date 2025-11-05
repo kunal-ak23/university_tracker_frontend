@@ -207,22 +207,28 @@ export function BillingForm({ mode = 'create', billing, availableBatches }: Bill
       
       const uniqueOEMs = Array.from(oemMap.values())
       console.log('Extracted OEMs from batches:', uniqueOEMs.length, uniqueOEMs)
-      console.log('Filtered batches sample:', filtered.slice(0, 3).map(b => ({ id: b.id, name: b.name, oem: b.oem })))
+      console.log('Filtered batches before OEM filter:', filtered.length, filtered.slice(0, 3).map(b => ({ id: b.id, name: b.name, oem: b.oem })))
       setAvailableOEMs(uniqueOEMs)
       
-      // Auto-select OEM if only one exists
-      if (uniqueOEMs.length === 1 && !selectedOEM) {
+      // Auto-select OEM if only one exists (but don't filter - all batches already belong to this OEM)
+      const shouldAutoSelectOEM = uniqueOEMs.length === 1 && !selectedOEM
+      if (shouldAutoSelectOEM) {
         const singleOEMId = String(uniqueOEMs[0].id)
-        form.setValue('oem', singleOEMId)
+        form.setValue('oem', singleOEMId, { shouldValidate: false })
+        // Don't filter by OEM when auto-selecting - all filtered batches already belong to this OEM
       } else if (uniqueOEMs.length === 0 && selectedOEM) {
         // Clear OEM selection if no OEMs found
-        form.setValue('oem', '')
+        form.setValue('oem', '', { shouldValidate: false })
       }
       
-      // Filter by OEM if selected
-      if (selectedOEM) {
+      // Filter by OEM if selected AND multiple OEMs exist
+      // If only one OEM exists, we don't filter by OEM since all batches already belong to that OEM
+      if (selectedOEM && uniqueOEMs.length > 1) {
         filtered = filtered.filter(batch => {
-          if (!batch.oem) return false
+          if (!batch.oem) {
+            console.warn('Batch missing OEM:', batch.id, batch.name)
+            return false
+          }
           let batchOEMId: string
           
           // Handle different possible types for batch.oem (API might return different formats)
@@ -236,9 +242,20 @@ export function BillingForm({ mode = 'create', billing, availableBatches }: Bill
           } else if (typeof oemValue === 'string') {
             batchOEMId = oemValue
           } else {
+            console.warn('Batch OEM in unexpected format:', batch.id, batch.name, oemValue)
             return false
           }
-          return batchOEMId === selectedOEM
+          const matches = batchOEMId === selectedOEM
+          if (!matches) {
+            console.log('Batch OEM mismatch:', {
+              batchId: batch.id,
+              batchName: batch.name,
+              batchOEMId,
+              selectedOEM,
+              types: { batchOEMId: typeof batchOEMId, selectedOEM: typeof selectedOEM }
+            })
+          }
+          return matches
         })
       }
       
@@ -259,6 +276,7 @@ export function BillingForm({ mode = 'create', billing, availableBatches }: Bill
       })
       setBatchesByOEM(batchesByOEMMap)
       
+      console.log('Final filtered batches count:', filtered.length, 'uniqueOEMs:', uniqueOEMs.length, 'selectedOEM:', selectedOEM)
       setFilteredBatches(filtered)
       
       // Auto-select all filtered batches when university, year, or OEM changes
@@ -330,8 +348,18 @@ export function BillingForm({ mode = 'create', billing, availableBatches }: Bill
   async function onSubmit(data: BillingFormValues) {
     try {
       setIsSubmitting(true)
+      
+      // Prepare payload - convert batch IDs to integers for backend
+      // Include OEM if provided (for filtering/validation purposes)
+      const payload: BillingCreateInput = {
+        name: data.name,
+        batches: data.batches.map(id => parseInt(id, 10)), // Convert string IDs to integers
+        notes: data.notes,
+        ...(data.oem && { oem: data.oem }), // Include OEM if provided (for validation/filtering)
+      }
+      
       if (mode === 'edit' && billing) {
-        await updateBilling(billing.id, data)
+        await updateBilling(billing.id, payload)
         toast({
           title: "Success",
           description: "Receivable updated successfully",
@@ -339,7 +367,7 @@ export function BillingForm({ mode = 'create', billing, availableBatches }: Bill
         navigateBack()
       } else {
         // Create draft billing
-        const response = await createBilling(data)
+        const response = await createBilling(payload)
         setDraftId(response.id)
         toast({
           title: "Success",
