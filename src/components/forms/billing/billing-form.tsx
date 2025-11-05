@@ -206,14 +206,21 @@ export function BillingForm({ mode = 'create', billing, availableBatches }: Bill
       })
       
       const uniqueOEMs = Array.from(oemMap.values())
-      console.log('Extracted OEMs from batches:', uniqueOEMs.length, uniqueOEMs)
-      console.log('Filtered batches before OEM filter:', filtered.length, filtered.slice(0, 3).map(b => ({ id: b.id, name: b.name, oem: b.oem })))
+      console.log('Extracted OEMs from batches:', uniqueOEMs.length, uniqueOEMs.map(o => ({ id: o.id, name: o.name })))
+      console.log('Filtered batches before OEM filter:', filtered.length, filtered.slice(0, 3).map(b => ({ 
+        id: b.id, 
+        name: b.name, 
+        oem: b.oem,
+        oemType: typeof b.oem,
+        oemId: typeof b.oem === 'object' && b.oem !== null ? (b.oem as OEM).id : b.oem
+      })))
       setAvailableOEMs(uniqueOEMs)
       
       // Auto-select OEM if only one exists (but don't filter - all batches already belong to this OEM)
       const shouldAutoSelectOEM = uniqueOEMs.length === 1 && !selectedOEM
       if (shouldAutoSelectOEM) {
         const singleOEMId = String(uniqueOEMs[0].id)
+        console.log('Auto-selecting single OEM:', singleOEMId)
         form.setValue('oem', singleOEMId, { shouldValidate: false })
         // Don't filter by OEM when auto-selecting - all filtered batches already belong to this OEM
       } else if (uniqueOEMs.length === 0 && selectedOEM) {
@@ -224,6 +231,8 @@ export function BillingForm({ mode = 'create', billing, availableBatches }: Bill
       // Filter by OEM if selected AND multiple OEMs exist
       // If only one OEM exists, we don't filter by OEM since all batches already belong to that OEM
       if (selectedOEM && uniqueOEMs.length > 1) {
+        console.log('Filtering batches by OEM:', selectedOEM, 'from', filtered.length, 'batches')
+        const beforeFilterCount = filtered.length
         filtered = filtered.filter(batch => {
           if (!batch.oem) {
             console.warn('Batch missing OEM:', batch.id, batch.name)
@@ -245,18 +254,26 @@ export function BillingForm({ mode = 'create', billing, availableBatches }: Bill
             console.warn('Batch OEM in unexpected format:', batch.id, batch.name, oemValue)
             return false
           }
-          const matches = batchOEMId === selectedOEM
+          
+          // Normalize both IDs to strings for comparison
+          const normalizedBatchOEMId = String(batchOEMId)
+          const normalizedSelectedOEM = String(selectedOEM)
+          const matches = normalizedBatchOEMId === normalizedSelectedOEM
+          
           if (!matches) {
             console.log('Batch OEM mismatch:', {
               batchId: batch.id,
               batchName: batch.name,
-              batchOEMId,
-              selectedOEM,
+              batchOEMId: normalizedBatchOEMId,
+              selectedOEM: normalizedSelectedOEM,
+              rawBatchOEMId: batchOEMId,
+              rawSelectedOEM: selectedOEM,
               types: { batchOEMId: typeof batchOEMId, selectedOEM: typeof selectedOEM }
             })
           }
           return matches
         })
+        console.log('After OEM filter:', filtered.length, 'batches remaining (from', beforeFilterCount, ')')
       }
       
       // Group batches by OEM for reference
