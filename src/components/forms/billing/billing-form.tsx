@@ -212,7 +212,7 @@ export function BillingForm({ mode = 'create', billing, availableBatches }: Bill
       
       // Auto-select OEM if only one exists
       if (uniqueOEMs.length === 1 && !selectedOEM) {
-        const singleOEMId = uniqueOEMs[0].id
+        const singleOEMId = String(uniqueOEMs[0].id)
         form.setValue('oem', singleOEMId)
       } else if (uniqueOEMs.length === 0 && selectedOEM) {
         // Clear OEM selection if no OEMs found
@@ -458,7 +458,7 @@ export function BillingForm({ mode = 'create', billing, availableBatches }: Bill
                 <FormLabel>OEM{availableOEMs.length > 1 ? ' (select one)' : ''}</FormLabel>
                 <Select 
                   onValueChange={field.onChange} 
-                  value={field.value || (availableOEMs.length === 1 ? availableOEMs[0].id : '')}
+                  value={field.value || (availableOEMs.length === 1 ? String(availableOEMs[0].id) : '')}
                   disabled={availableOEMs.length === 1}
                 >
                   <FormControl>
@@ -470,7 +470,7 @@ export function BillingForm({ mode = 'create', billing, availableBatches }: Bill
                     {availableOEMs.map((oem) => (
                       <SelectItem 
                         key={oem.id} 
-                        value={oem.id}
+                        value={String(oem.id)}
                       >
                         {oem.name}
                       </SelectItem>
