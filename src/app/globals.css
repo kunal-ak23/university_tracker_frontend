@@ -34,6 +34,9 @@ body {
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
+    /* Application scale - adjust this to make everything smaller/larger */
+    /* 0.85 = 85% size, 0.75 = 75% size, 0.65 = 65% size, etc. */
+    --app-scale: 0.70;
   }
   .dark {
     --background: 0 0% 0%;
@@ -67,8 +70,10 @@ body {
   * {
     @apply border-border;
   }
+  /* Scale the entire application by adjusting base font size */
+  /* This will scale all rem-based units (spacing, font sizes, etc.) */
   html {
-    zoom: 0.8;
+    font-size: calc(16px * var(--app-scale));
   }
   body {
     @apply bg-background text-foreground;
