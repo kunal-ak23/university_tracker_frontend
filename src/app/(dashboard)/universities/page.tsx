@@ -16,6 +16,7 @@ export default function UniversitiesPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [totalCount, setTotalCount] = useState(0)
   const [searchQuery, setSearchQuery] = useState("")
   const [sortColumn, setSortColumn] = useState<string>()
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>()
@@ -34,7 +35,8 @@ export default function UniversitiesPage() {
         page_size: 10
       })
       setUniversities(response.results)
-      setTotalPages(Math.ceil(response.count / 10))
+      setTotalCount(response.count)
+      setTotalPages(Math.max(1, Math.ceil(response.count / 10)))
     } catch (error) {
       console.error('Failed to fetch universities:', error)
       toast({
@@ -66,6 +68,7 @@ export default function UniversitiesPage() {
   }
 
   const handlePageChange = (page: number) => {
+    if (page < 1 || page > totalPages) return
     setCurrentPage(page)
   }
 
@@ -91,6 +94,7 @@ export default function UniversitiesPage() {
         onSort={handleSort}
         sortColumn={sortColumn}
         sortDirection={sortDirection}
+        totalCount={totalCount}
       />
     </div>
   )

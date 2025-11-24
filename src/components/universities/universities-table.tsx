@@ -22,13 +22,17 @@ interface UniversitiesTableProps {
   sortDirection?: 'asc' | 'desc'
   hasNextPage?: boolean
   hasPreviousPage?: boolean
+  totalCount?: number
 }
 
 export function UniversitiesTable({ 
   universities,
+  currentPage,
   totalPages,
+  onPageChange,
   hasNextPage,
   hasPreviousPage,
+  totalCount,
 }: UniversitiesTableProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -102,9 +106,13 @@ export function UniversitiesTable({
       data={universities}
       columns={columns}
       pageCount={totalPages}
+      currentPage={currentPage}
       searchPlaceholder="Search universities..."
-      hasNextPage={hasNextPage}
-      hasPreviousPage={hasPreviousPage}
+      hasNextPage={hasNextPage ?? currentPage < totalPages}
+      hasPreviousPage={hasPreviousPage ?? currentPage > 1}
+      onPageChange={onPageChange}
+      totalCount={totalCount}
+      pageSize={10}
     />
   )
 }
