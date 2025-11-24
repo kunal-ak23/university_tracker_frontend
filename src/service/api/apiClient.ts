@@ -1,60 +1,58 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
 "use client"
 
-import { getSession, signOut } from "next-auth/react";
-import { interceptFetch } from "./interceptor";
+import { getSession, signOut } from "next-auth/react"
+import { interceptFetch } from "./interceptor"
+import { buildApiError, SessionExpiredError } from "./errors"
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL
+
+type SessionWithTokens = {
+  accessToken?: string
+  refreshToken?: string
+}
 
 export const apiClient = {
   async fetch(endpoint: string, options: RequestInit = {}) {
-    const session = await getSession();
-    
-    // @ts-ignore
-    if (!session?.accessToken) {
-      throw new Error('No access token found. Please login again.')
+    const session = (await getSession()) as SessionWithTokens | null
+    const accessToken = session?.accessToken
+    const refreshToken = session?.refreshToken
+
+    if (!accessToken) {
+      throw new SessionExpiredError()
     }
 
     const headers = {
       "Content-Type": "application/json",
-      // @ts-ignore
-      Authorization: `Bearer ${session.accessToken}`,
+      Authorization: `Bearer ${accessToken}`,
       ...options.headers,
-    };
+    }
 
     let response = await interceptFetch(
       fetch(`${BASE_URL}${endpoint}`, {
         ...options,
         headers,
       })
-    );
+    )
 
-    // If token expired, try to refresh
-    // @ts-ignore
-    if (response.status === 401 && session.refreshToken) {
+    if (response.status === 401 && refreshToken) {
       try {
-        // Call refresh token endpoint directly
         const refreshResponse = await fetch(`${BASE_URL}/auth/refresh/`, {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            // @ts-ignore
-            refresh: session.refreshToken
-          })
+            refresh: refreshToken,
+          }),
         })
 
         if (!refreshResponse.ok) {
-          // Clear session and redirect to login
-          await signOut({ redirect: true, callbackUrl: '/login?error=session_expired' })
-          // Return early to prevent further execution
-          return Promise.reject(new Error('Refresh token expired. Please login again.'))
+          await signOut({ redirect: true, callbackUrl: "/login?error=session_expired" })
+          throw new SessionExpiredError("Refresh token expired. Please login again.")
         }
 
         const { access: newAccessToken } = await refreshResponse.json()
-        
-        // Retry original request with new token
+
         response = await interceptFetch(
           fetch(`${BASE_URL}${endpoint}`, {
             ...options,
@@ -66,27 +64,18 @@ export const apiClient = {
           })
         )
       } catch (error) {
-        // If refresh failed, clear session and redirect
-        await signOut({ redirect: true, callbackUrl: '/login?error=session_expired' })
-        return Promise.reject(error)
+        await signOut({ redirect: true, callbackUrl: "/login?error=session_expired" })
+        if (error instanceof SessionExpiredError) {
+          throw error
+        }
+        throw new SessionExpiredError("Failed to refresh token. Please login again.")
       }
+    } else if (response.status === 401) {
+      throw new SessionExpiredError()
     }
 
     if (!response.ok) {
-      try {
-        const contentType = response.headers.get('content-type')
-        if (contentType && contentType.includes('application/json')) {
-          const errorData = await response.json()
-          throw new Error(JSON.stringify(errorData))
-        }
-        const errorText = await response.text()
-        throw new Error(errorText || `API request failed with status ${response.status}`)
-      } catch (error) {
-        if (error instanceof Error) {
-          throw error
-        }
-        throw new Error('API request failed')
-      }
+      throw await buildApiError(response)
     }
 
     if (response.status !== 204) {
@@ -106,10 +95,10 @@ export const apiClient = {
     return this.fetch("/auth/register/", {
       method: "POST",
       body: JSON.stringify(userData),
-    });
+    })
   },
 
   async getUserProfile() {
-    return this.fetch("/auth/me/");
+    return this.fetch("/auth/me/")
   },
-}; 
+}

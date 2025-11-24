@@ -25,7 +25,9 @@ import { University } from "@/types/university"
 import { OEM } from "@/types/oem"
 
 const contractFormSchema = z.object({
-  name: z.string().min(1, "Name is required"),
+  name: z.string()
+    .min(1, "Name is required")
+    .max(100, "Contract name must be 100 characters or fewer"),
   university: z.union([z.string(), z.number()]).transform(val => val.toString()),
   oem: z.union([z.string(), z.number()]).transform(val => val.toString()),
   start_year: z.string().min(1, "Start year is required"),

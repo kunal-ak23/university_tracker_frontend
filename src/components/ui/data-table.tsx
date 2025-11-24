@@ -18,6 +18,7 @@ interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
   searchPlaceholder?: string
+  searchColumnKey?: string
   pageCount?: number
   hasNextPage?: boolean
   hasPreviousPage?: boolean
@@ -32,6 +33,7 @@ export function DataTable<TData, TValue>({
   columns,
   data,
   searchPlaceholder = "Search...",
+  searchColumnKey = "name",
   pageCount = 1,
   hasNextPage = false,
   hasPreviousPage = false,
@@ -64,18 +66,22 @@ export function DataTable<TData, TValue>({
     },
   })
 
+  const filterColumn = searchColumnKey ? table.getColumn(searchColumnKey) : undefined
+
   return (
     <div>
       <div className="flex items-center justify-between py-4">
         <div className="flex items-center gap-4">
-          <Input
-            placeholder={searchPlaceholder}
-            value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
-            onChange={(event) =>
-              table.getColumn("name")?.setFilterValue(event.target.value)
-            }
-            className="max-w-sm"
-          />
+          {filterColumn ? (
+            <Input
+              placeholder={searchPlaceholder}
+              value={(filterColumn.getFilterValue() as string) ?? ""}
+              onChange={(event) =>
+                filterColumn.setFilterValue(event.target.value)
+              }
+              className="max-w-sm"
+            />
+          ) : null}
           <div className="flex flex-col text-sm">
             {totalCount > 0 ? (
               <>

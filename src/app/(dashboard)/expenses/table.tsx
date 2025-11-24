@@ -34,6 +34,8 @@ export function ExpensesTable() {
           { header: 'Batch', accessorKey: 'batch_details.name' },
           { header: 'Event', accessorKey: 'event_details.title' },
         ] as any}
+        searchColumnKey="category"
+        searchPlaceholder="Filter by category"
       />
     </div>
   )

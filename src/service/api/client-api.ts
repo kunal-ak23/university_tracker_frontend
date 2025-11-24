@@ -1,25 +1,27 @@
 "use client"
 
-/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { getSession } from "next-auth/react"
 import { useLoading } from "@/hooks/use-loading"
+import { buildApiError, SessionExpiredError } from "./errors"
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL
 
 class ClientAPIClient {
   private async getHeaders() {
-    const session = await getSession()
+    const session = (await getSession()) as { accessToken?: string } | null
+    const accessToken = session?.accessToken
+
+    if (!accessToken) {
+      throw new SessionExpiredError()
+    }
+
     return {
       "Content-Type": "application/json",
-      ...(session?.accessToken
-        ? { Authorization: `Bearer ${session.accessToken}` }
-        : {}),
+      Authorization: `Bearer ${accessToken}`,
     }
   }
 
   async fetch(endpoint: string, options: RequestInit = {}) {
-    // Get loading context from hook - but we need to call this from component
-    // So we'll create a wrapper that components can use
     const headers = await this.getHeaders()
     const mergedHeaders = {
       ...headers,
@@ -32,7 +34,7 @@ class ClientAPIClient {
     })
 
     if (!response.ok) {
-      throw new Error(`API error: ${response.statusText}`)
+      throw await buildApiError(response)
     }
 
     if (response.status !== 204) {

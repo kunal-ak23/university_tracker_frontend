@@ -1,13 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { useRouter } from "next/navigation"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import { signIn } from "next-auth/react"
 
@@ -20,6 +20,8 @@ type LoginFormValues = z.infer<typeof loginFormSchema>
 
 export function LoginForm() {
   const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
 
@@ -32,6 +34,39 @@ export function LoginForm() {
       password: "",
     },
   })
+
+  useEffect(() => {
+    const errorParam = searchParams.get("error")
+
+    if (!errorParam) {
+      return
+    }
+
+    const normalizedError = errorParam.toLowerCase()
+    const messageMap: Record<string, { title: string; description: string }> = {
+      session_expired: {
+        title: "Session expired",
+        description: "Your session has expired. Please sign in again.",
+      },
+    }
+
+    const message = messageMap[normalizedError] ?? {
+      title: "Error",
+      description: "Something went wrong. Please try again.",
+    }
+
+    toast({
+      ...message,
+      variant: "destructive",
+    })
+
+    const params = new URLSearchParams(searchParams.toString())
+    params.delete("error")
+    const query = params.toString()
+    const nextUrl = query ? `${pathname}?${query}` : pathname
+
+    router.replace(nextUrl)
+  }, [pathname, router, searchParams, toast])
 
   async function onSubmit(data: LoginFormValues) {
     setIsLoading(true)

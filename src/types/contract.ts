@@ -77,7 +77,9 @@ export interface Contract {
 }
 
 export const contractFormSchema = z.object({
-  name: z.string().min(1, "Name is required"),
+  name: z.string()
+    .min(1, "Name is required")
+    .max(100, "Contract name must be 100 characters or fewer"),
   start_year: z.number().min(2020, "Start year must be 2020 or later"),
   end_year: z.number().min(2020, "End year must be 2020 or later"),
   start_date: z.string().optional(),

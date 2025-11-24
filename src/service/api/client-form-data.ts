@@ -1,8 +1,8 @@
 "use client"
 
-/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { getSession, signOut } from "next-auth/react"
 import { loadingManager } from "./interceptor"
+import { buildApiError, SessionExpiredError } from "./errors"
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL
 
@@ -11,15 +11,12 @@ export async function postFormDataClient(
   formData: FormData,
   options: RequestInit = {}
 ): Promise<any> {
-  const session = await getSession()
-  
-  // @ts-ignore
+  const session = (await getSession()) as { accessToken?: string; refreshToken?: string } | null
   const accessToken = session?.accessToken
-  // @ts-ignore
   const refreshToken = session?.refreshToken
   
   if (!accessToken) {
-    throw new Error('No access token found. Please login again.')
+    throw new SessionExpiredError()
   }
 
   const url = `${BASE_URL}${endpoint}`
@@ -36,14 +33,12 @@ export async function postFormDataClient(
       },
     })
 
-    // If token expired, try to refresh
     if (response.status === 401 && refreshToken) {
       try {
-        // Call refresh token endpoint directly
         const refreshResponse = await fetch(`${BASE_URL}/auth/refresh/`, {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             refresh: refreshToken
@@ -51,44 +46,33 @@ export async function postFormDataClient(
         })
 
         if (!refreshResponse.ok) {
-          // Clear session and redirect to login
-          await signOut({ redirect: true, callbackUrl: '/login?error=session_expired' })
-          return Promise.reject(new Error('Refresh token expired. Please login again.'))
+          await signOut({ redirect: true, callbackUrl: "/login?error=session_expired" })
+          throw new SessionExpiredError("Refresh token expired. Please login again.")
         }
 
         const { access: newAccessToken } = await refreshResponse.json()
         
-        // Retry original request with new token
         response = await fetch(url, {
           ...options,
           body: formData,
           headers: {
-            'Authorization': `Bearer ${newAccessToken}`,
+            Authorization: `Bearer ${newAccessToken}`,
             ...options.headers,
           },
         })
       } catch (error) {
-        // If refresh failed, clear session and redirect
-        await signOut({ redirect: true, callbackUrl: '/login?error=session_expired' })
-        return Promise.reject(error)
+        await signOut({ redirect: true, callbackUrl: "/login?error=session_expired" })
+        if (error instanceof SessionExpiredError) {
+          throw error
+        }
+        throw new SessionExpiredError("Failed to refresh token. Please login again.")
       }
+    } else if (response.status === 401) {
+      throw new SessionExpiredError()
     }
 
     if (!response.ok) {
-      try {
-        const contentType = response.headers.get('content-type')
-        if (contentType && contentType.includes('application/json')) {
-          const errorData = await response.json()
-          throw new Error(JSON.stringify(errorData))
-        }
-        const errorText = await response.text()
-        throw new Error(errorText || `API request failed with status ${response.status}`)
-      } catch (error) {
-        if (error instanceof Error) {
-          throw error
-        }
-        throw new Error('API request failed')
-      }
+      throw await buildApiError(response)
     }
 
     if (response.status === 204) {
