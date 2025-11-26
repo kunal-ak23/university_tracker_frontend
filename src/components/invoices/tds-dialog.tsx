@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -22,7 +22,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
-import { createInvoiceTDS } from "@/service/api/invoice-tds"
+import { createInvoiceTDS, updateInvoiceTDS } from "@/service/api/invoice-tds"
 import { Loader2 } from "lucide-react"
 import { format } from "date-fns"
 import { Calendar as CalendarIcon } from "lucide-react"
@@ -40,6 +40,9 @@ import {
 } from "@/components/ui/select"
 import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/service/utils"
+import { InvoiceTDS } from "@/types/payment"
+
+const CERTIFICATE_TYPES = ['form_16a', 'form_16b', 'form_16', 'form_26as', 'certificate', 'other'] as const
 
 const formSchema = z.object({
   amount: z.string().min(1, "Amount is required"),
@@ -48,7 +51,7 @@ const formSchema = z.object({
     required_error: "Deduction date is required",
   }),
   reference_number: z.string().optional(),
-  certificate_type: z.enum(['form_16a', 'form_16', 'form_26as', 'other']).optional(),
+  certificate_type: z.enum(CERTIFICATE_TYPES).optional(),
   certificate_document: z.instanceof(File).optional(),
   description: z.string().optional(),
   notes: z.string().optional(),
@@ -59,7 +62,8 @@ interface TDSDialogProps {
   onOpenChange: (open: boolean) => void
   invoiceId: number
   invoiceAmount: number
-  onTDSAdded: () => void
+  onSuccess: () => void
+  tdsEntry?: InvoiceTDS | null
 }
 
 export function TDSDialog({
@@ -67,10 +71,12 @@ export function TDSDialog({
   onOpenChange,
   invoiceId,
   invoiceAmount,
-  onTDSAdded,
+  onSuccess,
+  tdsEntry,
 }: TDSDialogProps) {
   const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const isEditMode = Boolean(tdsEntry)
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -86,6 +92,36 @@ export function TDSDialog({
     },
   })
 
+  useEffect(() => {
+    if (!open) {
+      return
+    }
+
+    if (tdsEntry) {
+      form.reset({
+        amount: tdsEntry.amount || "",
+        tds_rate: tdsEntry.tds_rate || "",
+        deduction_date: tdsEntry.deduction_date ? new Date(tdsEntry.deduction_date) : new Date(),
+        reference_number: tdsEntry.reference_number || "",
+        certificate_type: tdsEntry.certificate_type || undefined,
+        certificate_document: undefined,
+        description: tdsEntry.description || "",
+        notes: tdsEntry.notes || "",
+      })
+    } else {
+      form.reset({
+        amount: "",
+        tds_rate: "",
+        deduction_date: new Date(),
+        reference_number: "",
+        certificate_type: undefined,
+        certificate_document: undefined,
+        description: "",
+        notes: "",
+      })
+    }
+  }, [open, tdsEntry, form])
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     const amount = parseFloat(values.amount)
     if (amount > invoiceAmount) {
@@ -97,30 +133,38 @@ export function TDSDialog({
     }
 
     setIsSubmitting(true)
+    const payload = {
+      amount: values.amount,
+      tds_rate: values.tds_rate,
+      deduction_date: format(values.deduction_date, "yyyy-MM-dd"),
+      reference_number: values.reference_number || undefined,
+      certificate_type: values.certificate_type,
+      certificate_document: values.certificate_document,
+      description: values.description || undefined,
+      notes: values.notes || undefined,
+    }
+
     try {
-      await createInvoiceTDS({
-        invoice: invoiceId,
-        amount: values.amount,
-        tds_rate: values.tds_rate,
-        deduction_date: format(values.deduction_date, "yyyy-MM-dd"),
-        reference_number: values.reference_number || undefined,
-        certificate_type: values.certificate_type,
-        certificate_document: values.certificate_document,
-        description: values.description || undefined,
-        notes: values.notes || undefined,
-      })
+      if (isEditMode && tdsEntry) {
+        await updateInvoiceTDS(tdsEntry.id, payload)
+      } else {
+        await createInvoiceTDS({
+          ...payload,
+          invoice: invoiceId,
+        })
+      }
       toast({
         title: "Success",
-        description: "TDS entry created successfully",
+        description: isEditMode ? "TDS entry updated successfully" : "TDS entry created successfully",
       })
       form.reset()
-      onTDSAdded()
+      onSuccess()
       onOpenChange(false)
     } catch (error) {
-      console.error("Failed to create TDS entry:", error)
+      console.error("Failed to save TDS entry:", error)
       toast({
         title: "Error",
-        description: "Failed to create TDS entry",
+        description: "Failed to save TDS entry",
         variant: "destructive",
       })
     } finally {
@@ -132,7 +176,7 @@ export function TDSDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add TDS Entry</DialogTitle>
+          <DialogTitle>{isEditMode ? "Edit TDS Entry" : "Add TDS Entry"}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -230,10 +274,12 @@ export function TDSDialog({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="form_16a">Form 16A</SelectItem>
-                        <SelectItem value="form_16">Form 16</SelectItem>
-                        <SelectItem value="form_26as">Form 26AS</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
+                    <SelectItem value="form_16a">Form 16A</SelectItem>
+                    <SelectItem value="form_16b">Form 16B</SelectItem>
+                    <SelectItem value="form_16">Form 16</SelectItem>
+                    <SelectItem value="form_26as">Form 26AS</SelectItem>
+                    <SelectItem value="certificate">TDS Certificate</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -303,7 +349,7 @@ export function TDSDialog({
               </Button>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Create TDS Entry
+                {isEditMode ? "Save Changes" : "Create TDS Entry"}
               </Button>
             </div>
           </form>

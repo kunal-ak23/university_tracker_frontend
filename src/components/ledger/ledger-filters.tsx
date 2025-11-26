@@ -14,9 +14,10 @@ import { LedgerFilters as LedgerFiltersType } from "@/types/ledger"
 interface LedgerFiltersProps {
   universities: University[]
   initialFilters: LedgerFiltersType
+  currentView: "transactions" | "accounts"
 }
 
-export function LedgerFilters({ universities, initialFilters }: LedgerFiltersProps) {
+export function LedgerFilters({ universities, initialFilters, currentView }: LedgerFiltersProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   
@@ -24,7 +25,9 @@ export function LedgerFilters({ universities, initialFilters }: LedgerFiltersPro
     university: initialFilters.university || 'all',
     start_date: initialFilters.start_date || '',
     end_date: initialFilters.end_date || '',
-    transaction_type: initialFilters.transaction_type || 'all',
+    account: initialFilters.account || 'all',
+    entry_type: initialFilters.entry_type || 'all',
+    source: initialFilters.source || 'all',
     search: initialFilters.search || ''
   })
 
@@ -41,6 +44,10 @@ export function LedgerFilters({ universities, initialFilters }: LedgerFiltersPro
       }
     })
     
+    if (currentView !== 'transactions') {
+      params.set('view', currentView)
+    }
+    
     router.push(`/ledger?${params.toString()}`)
   }
 
@@ -49,10 +56,16 @@ export function LedgerFilters({ universities, initialFilters }: LedgerFiltersPro
       university: 'all',
       start_date: '',
       end_date: '',
-      transaction_type: 'all',
+      account: 'all',
+      entry_type: 'all',
+      source: 'all',
       search: ''
     })
-    router.push('/ledger')
+    const params = new URLSearchParams()
+    if (currentView !== 'transactions') {
+      params.set('view', currentView)
+    }
+    router.push(`/ledger${params.toString() ? `?${params.toString()}` : ''}`)
   }
 
   const setCurrentYear = () => {
@@ -95,24 +108,62 @@ export function LedgerFilters({ universities, initialFilters }: LedgerFiltersPro
             </Select>
           </div>
 
-          {/* Transaction Type Filter */}
+          {/* Account Filter */}
           <div className="space-y-2">
-            <Label htmlFor="transaction_type">Transaction Type</Label>
+            <Label htmlFor="account">Account</Label>
             <Select
-              value={filters.transaction_type}
-              onValueChange={(value) => handleFilterChange('transaction_type', value)}
+              value={filters.account}
+              onValueChange={(value) => handleFilterChange('account', value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="All types" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="income">Income</SelectItem>
+                <SelectItem value="cash">Cash</SelectItem>
+                <SelectItem value="accounts_receivable">Accounts Receivable</SelectItem>
+                <SelectItem value="oem_payable">OEM Payable</SelectItem>
                 <SelectItem value="expense">Expense</SelectItem>
-                <SelectItem value="oem_payment">OEM Payment</SelectItem>
-                <SelectItem value="commission_payment">Commission Payment</SelectItem>
-                <SelectItem value="refund">Refund</SelectItem>
-                <SelectItem value="adjustment">Adjustment</SelectItem>
+                <SelectItem value="commission_expense">Commission Expense</SelectItem>
+                <SelectItem value="revenue">Revenue</SelectItem>
+                <SelectItem value="tds_payable">TDS Payable</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Entry Type Filter */}
+          <div className="space-y-2">
+            <Label htmlFor="entry_type">Entry Type</Label>
+            <Select
+              value={filters.entry_type}
+              onValueChange={(value) => handleFilterChange('entry_type', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="All entries" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Entries</SelectItem>
+                <SelectItem value="DEBIT">Debit</SelectItem>
+                <SelectItem value="CREDIT">Credit</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Source Filter */}
+          <div className="space-y-2">
+            <Label htmlFor="source">Source</Label>
+            <Select
+              value={filters.source}
+              onValueChange={(value) => handleFilterChange('source', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="All sources" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Sources</SelectItem>
+                <SelectItem value="payments">Payments</SelectItem>
+                <SelectItem value="expenses">Expenses</SelectItem>
+                <SelectItem value="oem_payments">OEM Payments</SelectItem>
               </SelectContent>
             </Select>
           </div>

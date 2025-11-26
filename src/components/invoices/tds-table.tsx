@@ -23,16 +23,17 @@ import {
 import { useToast } from "@/hooks/use-toast"
 import { deleteInvoiceTDS } from "@/service/api/invoice-tds"
 import { formatDate, formatCurrency } from "@/service/utils"
-import { Trash2, FileText } from "lucide-react"
+import { Trash2, FileText, Edit } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { InvoiceTDS } from "@/types/payment"
 
 interface TDSTableProps {
   tdsEntries: InvoiceTDS[]
   onTDSDeleted: () => void
+  onTDSEdit: (tds: InvoiceTDS) => void
 }
 
-export function TDSTable({ tdsEntries, onTDSDeleted }: TDSTableProps) {
+export function TDSTable({ tdsEntries, onTDSDeleted, onTDSEdit }: TDSTableProps) {
   const { toast } = useToast()
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [selectedTDSId, setSelectedTDSId] = useState<number | null>(null)
@@ -86,7 +87,7 @@ export function TDSTable({ tdsEntries, onTDSDeleted }: TDSTableProps) {
             <TableHead>Reference Number</TableHead>
             <TableHead>Certificate Type</TableHead>
             <TableHead>Certificate</TableHead>
-            <TableHead>Actions</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -119,17 +120,26 @@ export function TDSTable({ tdsEntries, onTDSDeleted }: TDSTableProps) {
                   "-"
                 )}
               </TableCell>
-              <TableCell>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setSelectedTDSId(tds.id)
-                    setIsDeleteDialogOpen(true)
-                  }}
-                >
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
+              <TableCell className="text-right">
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onTDSEdit(tds)}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedTDSId(tds.id)
+                      setIsDeleteDialogOpen(true)
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
               </TableCell>
             </TableRow>
           ))}

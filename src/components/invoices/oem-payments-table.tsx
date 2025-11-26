@@ -23,16 +23,17 @@ import {
 import { useToast } from "@/hooks/use-toast"
 import { deleteInvoiceOEMPayment } from "@/service/api/invoice-oem-payments"
 import { formatDate, formatCurrency } from "@/service/utils"
-import { Trash2 } from "lucide-react"
+import { Trash2, Edit } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { InvoiceOEMPayment } from "@/types/payment"
 
 interface OEMPaymentsTableProps {
   oemPayments: InvoiceOEMPayment[]
   onPaymentDeleted: () => void
+  onPaymentEdit: (payment: InvoiceOEMPayment) => void
 }
 
-export function OEMPaymentsTable({ oemPayments, onPaymentDeleted }: OEMPaymentsTableProps) {
+export function OEMPaymentsTable({ oemPayments, onPaymentDeleted, onPaymentEdit }: OEMPaymentsTableProps) {
   const { toast } = useToast()
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [selectedPaymentId, setSelectedPaymentId] = useState<number | null>(null)
@@ -95,7 +96,7 @@ export function OEMPaymentsTable({ oemPayments, onPaymentDeleted }: OEMPaymentsT
             <TableHead>Status</TableHead>
             <TableHead>Reference Number</TableHead>
             <TableHead>Description</TableHead>
-            <TableHead>Actions</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -113,17 +114,26 @@ export function OEMPaymentsTable({ oemPayments, onPaymentDeleted }: OEMPaymentsT
               </TableCell>
               <TableCell>{payment.reference_number || "-"}</TableCell>
               <TableCell>{payment.description || "-"}</TableCell>
-              <TableCell>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setSelectedPaymentId(payment.id)
-                    setIsDeleteDialogOpen(true)
-                  }}
-                >
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
+              <TableCell className="text-right">
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onPaymentEdit(payment)}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedPaymentId(payment.id)
+                      setIsDeleteDialogOpen(true)
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
               </TableCell>
             </TableRow>
           ))}

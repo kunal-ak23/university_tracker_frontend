@@ -4,6 +4,7 @@ import { Billing } from "@/types/billing"
 import { Badge } from "@/components/ui/badge"
 import { IndianRupee } from "lucide-react"
 import Link from "next/link"
+import { formatCurrency } from "@/service/utils"
 
 interface BillingListProps {
   billings: Billing[]
@@ -60,6 +61,11 @@ export function BillingList({ billings }: BillingListProps) {
                 <Badge variant={getStatusBadgeVariant(billing.status, billing.balance_due)}>
                   {getStatusLabel(billing.status, billing.balance_due)}
                 </Badge>
+                {Number(billing.oem_overpayment_amount || 0) > 0 && (
+                  <span className="rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-900">
+                    Overpaid {formatCurrency(Number(billing.oem_overpayment_amount))}
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-6">
                 <div className="text-right">

@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { format } from "date-fns"
 import { getLedgerEntries, getLedgerSummary } from "@/service/api/ledger"
-import type { PaymentLedger, LedgerSummary } from "@/types/ledger"
+import type { PaymentLedger, LedgerSummary, LedgerAccount } from "@/types/ledger"
 
 interface UniversityLedgerCardProps {
   universityId: string
@@ -124,24 +124,21 @@ export function UniversityLedgerCard({ universityId }: UniversityLedgerCardProps
     return `₹${Math.abs(amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
   }
 
-  const getTransactionTypeColor = (type: string): string => {
-    switch (type) {
-      case 'income':
-      case 'refund':
-        return 'text-green-600'
-      case 'expense':
-      case 'oem_payment':
-      case 'commission_payment':
-        return 'text-red-600'
-      case 'adjustment':
-        return 'text-blue-600'
-      default:
-        return 'text-gray-600'
-    }
+  const getEntryColor = (entry: PaymentLedger): string => {
+    return entry.entry_type === 'DEBIT' ? 'text-green-600' : 'text-red-600'
   }
 
-  const getTransactionTypeBadge = (type: string): string => {
-    return type.charAt(0).toUpperCase() + type.slice(1).replace('_', ' ')
+  const getAccountLabel = (account: LedgerAccount) => {
+    const mapping: Record<LedgerAccount, string> = {
+      cash: 'Cash',
+      accounts_receivable: 'Accounts Receivable',
+      oem_payable: 'OEM Payable',
+      expense: 'Expense',
+      commission_expense: 'Commission Expense',
+      revenue: 'Revenue',
+      tds_payable: 'TDS Payable',
+    }
+    return mapping[account] || account
   }
 
   if (loading) {
@@ -246,25 +243,24 @@ export function UniversityLedgerCard({ universityId }: UniversityLedgerCardProps
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <Badge variant="outline">
-                        {getTransactionTypeBadge(transaction.transaction_type)}
+                        {getAccountLabel(transaction.account)}
                       </Badge>
                       <span className="text-sm font-medium">
-                        {transaction.description}
+                        {transaction.memo || '—'}
                       </span>
                     </div>
                     <div className="text-xs text-gray-600 mt-1">
-                      {format(new Date(transaction.transaction_date), "MMM dd, yyyy")}
-                      {transaction.reference_number && (
-                        <span className="ml-2">• Ref: {transaction.reference_number}</span>
+                      {format(new Date(transaction.entry_date), "MMM dd, yyyy")}
+                      {(transaction.payment_reference || transaction.external_reference) && (
+                        <span className="ml-2">
+                          • Ref: {transaction.payment_reference || transaction.external_reference}
+                        </span>
                       )}
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
-                    <span className={`font-semibold ${getTransactionTypeColor(transaction.transaction_type)}`}>
+                    <span className={`font-semibold ${getEntryColor(transaction)}`}>
                       {formatCurrency(transaction.amount)}
-                    </span>
-                    <span className="text-sm text-gray-600 w-20 text-right">
-                      Balance: {formatCurrency(transaction.running_balance)}
                     </span>
                   </div>
                 </div>

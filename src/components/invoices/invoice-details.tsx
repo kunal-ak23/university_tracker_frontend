@@ -26,7 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Invoice } from "@/types/payment"
+import { Invoice, InvoiceOEMPayment, InvoiceTDS } from "@/types/payment"
 
 
 interface InvoiceDetailsProps {
@@ -41,11 +41,34 @@ export function InvoiceDetails({ invoice }: InvoiceDetailsProps) {
   const [isOEMPaymentDialogOpen, setIsOEMPaymentDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [selectedTDSEntry, setSelectedTDSEntry] = useState<InvoiceTDS | null>(null)
+  const [selectedOEMPayment, setSelectedOEMPayment] = useState<InvoiceOEMPayment | null>(null)
 
-  const remainingAmount = Number(invoice.amount) - Number(invoice.amount_paid)
+  const totalAmount = Number(invoice.amount)
   const totalTDS = Number(invoice.total_tds || 0)
+  const amountPaid = Number(invoice.amount_paid)
+  const netInvoiceAmount = invoice.net_invoice_amount
+    ? Number(invoice.net_invoice_amount)
+    : totalAmount - totalTDS
+  const remainingAmount = Math.max(netInvoiceAmount - amountPaid, 0)
   const oemTransferRemaining = Number(invoice.oem_transfer_remaining || 0)
+  const oemOverpaymentAmount = Number(invoice.oem_overpayment_amount || 0)
+  const suggestedOemPayment = oemTransferRemaining > 0 ? oemTransferRemaining : undefined
   const isInvoicePaid = invoice.status === 'paid'
+
+  const handleTDSOpenChange = (open: boolean) => {
+    setIsTDSDialogOpen(open)
+    if (!open) {
+      setSelectedTDSEntry(null)
+    }
+  }
+
+  const handleOEMOpenChange = (open: boolean) => {
+    setIsOEMPaymentDialogOpen(open)
+    if (!open) {
+      setSelectedOEMPayment(null)
+    }
+  }
 
   const handleDelete = async () => {
     setIsDeleting(true)
@@ -150,7 +173,7 @@ export function InvoiceDetails({ invoice }: InvoiceDetailsProps) {
                 <div className="font-medium">{formatCurrency(parseFloat(invoice.amount_paid))}</div>
               </div>
               <div>
-                <div className="text-sm text-muted-foreground">Remaining Amount</div>
+                <div className="text-sm text-muted-foreground">Remaining Amount (After TDS)</div>
                 <div className="font-medium">{formatCurrency(remainingAmount)}</div>
               </div>
               {totalTDS > 0 && (
@@ -228,10 +251,12 @@ export function InvoiceDetails({ invoice }: InvoiceDetailsProps) {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>OEM Repayments</CardTitle>
-            <Button
-              onClick={() => setIsOEMPaymentDialogOpen(true)}
-              disabled={oemTransferRemaining <= 0}
-            >
+          <Button
+            onClick={() => {
+              setSelectedOEMPayment(null)
+              setIsOEMPaymentDialogOpen(true)
+            }}
+          >
               <Plus className="mr-2 h-4 w-4" />
               Add OEM Payment
             </Button>
@@ -251,9 +276,18 @@ export function InvoiceDetails({ invoice }: InvoiceDetailsProps) {
                 <div className="font-medium">{formatCurrency(oemTransferRemaining)}</div>
               </div>
             </div>
+            {oemOverpaymentAmount > 0 && (
+              <div className="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                You have overpaid by {formatCurrency(oemOverpaymentAmount)} for this invoice.
+              </div>
+            )}
             <OEMPaymentsTable
               oemPayments={invoice.oem_payments || []}
               onPaymentDeleted={() => router.refresh()}
+              onPaymentEdit={(payment) => {
+                setSelectedOEMPayment(payment)
+                setIsOEMPaymentDialogOpen(true)
+              }}
             />
           </CardContent>
         </Card>
@@ -263,7 +297,10 @@ export function InvoiceDetails({ invoice }: InvoiceDetailsProps) {
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>TDS Entries</CardTitle>
           <Button
-            onClick={() => setIsTDSDialogOpen(true)}
+            onClick={() => {
+              setSelectedTDSEntry(null)
+              setIsTDSDialogOpen(true)
+            }}
           >
             <Plus className="mr-2 h-4 w-4" />
             Add TDS Entry
@@ -285,6 +322,10 @@ export function InvoiceDetails({ invoice }: InvoiceDetailsProps) {
           <TDSTable
             tdsEntries={invoice.tds_entries || []}
             onTDSDeleted={() => router.refresh()}
+            onTDSEdit={(tds) => {
+              setSelectedTDSEntry(tds)
+              setIsTDSDialogOpen(true)
+            }}
           />
         </CardContent>
       </Card>
@@ -302,25 +343,26 @@ export function InvoiceDetails({ invoice }: InvoiceDetailsProps) {
 
       <TDSDialog
         open={isTDSDialogOpen}
-        onOpenChange={setIsTDSDialogOpen}
+        onOpenChange={handleTDSOpenChange}
         invoiceId={invoice.id}
         invoiceAmount={parseFloat(invoice.amount)}
-        onTDSAdded={() => {
-          setIsTDSDialogOpen(false)
+        onSuccess={() => {
           router.refresh()
         }}
+        tdsEntry={selectedTDSEntry}
       />
 
       {isInvoicePaid && (
         <OEMPaymentDialog
           open={isOEMPaymentDialogOpen}
-          onOpenChange={setIsOEMPaymentDialogOpen}
+          onOpenChange={handleOEMOpenChange}
           invoiceId={invoice.id}
-          maxAmount={oemTransferRemaining}
-          onPaymentAdded={() => {
-            setIsOEMPaymentDialogOpen(false)
+          suggestedAmount={suggestedOemPayment}
+          overpaidAmount={oemOverpaymentAmount}
+          onPaymentSaved={() => {
             router.refresh()
           }}
+          payment={selectedOEMPayment}
         />
       )}
 

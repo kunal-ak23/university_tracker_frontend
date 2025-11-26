@@ -57,7 +57,7 @@ export interface InvoiceTDS {
   tds_rate: string
   deduction_date: string
   reference_number?: string
-  certificate_type?: 'form_16a' | 'form_16' | 'form_26as' | 'other'
+  certificate_type?: 'form_16a' | 'form_16b' | 'form_16' | 'form_26as' | 'certificate' | 'other'
   certificate_document?: string
   description?: string
   notes?: string
@@ -84,6 +84,7 @@ export interface Invoice {
   oem_transfer_amount?: string
   oem_transfer_paid?: string
   oem_transfer_remaining?: string
+  oem_overpayment_amount?: string
   total_tds?: string
   net_invoice_amount?: string
   net_amount_received?: string

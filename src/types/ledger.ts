@@ -1,9 +1,21 @@
+export type LedgerAccount =
+  | 'cash'
+  | 'accounts_receivable'
+  | 'oem_payable'
+  | 'expense'
+  | 'commission_expense'
+  | 'revenue'
+  | 'tds_payable'
+
+export type LedgerEntryType = 'DEBIT' | 'CREDIT'
+
 export interface PaymentLedger {
   id: number
-  transaction_type: 'income' | 'expense' | 'oem_payment' | 'commission_payment' | 'refund' | 'adjustment'
+  entry_date: string
+  account: LedgerAccount
+  entry_type: LedgerEntryType
   amount: number
-  transaction_date: string
-  description: string
+  memo: string | null
   university: number | null
   university_name: string | null
   oem: number | null
@@ -12,11 +24,30 @@ export interface PaymentLedger {
   billing_name: string | null
   payment: number | null
   payment_reference: string | null
-  running_balance: number
-  reference_number: string | null
-  notes: string | null
+  oem_payment: number | null
+  expense: number | null
+  invoice: number | null
+  external_reference: string | null
+  reversing: boolean
   created_at: string
   updated_at: string
+}
+
+export interface LedgerTransaction {
+  id: string
+  source_type: 'payment' | 'oem_payment' | 'expense' | 'invoice' | 'ledger_line'
+  source_id: number | null
+  date: string
+  description: string
+  memo: string | null
+  university: number | null
+  university_name: string | null
+  cash_in: number
+  cash_out: number
+  net_cash: number
+  accounts_receivable_delta: number
+  oem_payable_delta: number
+  references: string[]
 }
 
 export interface LedgerSummary {
@@ -45,7 +76,9 @@ export interface LedgerFilters {
   university?: string
   start_date?: string
   end_date?: string
-  transaction_type?: string
+  account?: string
+  entry_type?: LedgerEntryType | string
+  source?: 'payments' | 'expenses' | 'oem_payments' | string
   search?: string
   page?: number
 }

@@ -10,7 +10,7 @@ export interface InvoiceTDSFormData {
   tds_rate: string
   deduction_date: string
   reference_number?: string
-  certificate_type?: 'form_16a' | 'form_16' | 'form_26as' | 'other'
+  certificate_type?: 'form_16a' | 'form_16b' | 'form_16' | 'form_26as' | 'certificate' | 'other'
   certificate_document?: File
   description?: string
   notes?: string

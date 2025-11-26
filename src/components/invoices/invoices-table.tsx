@@ -132,6 +132,21 @@ export function InvoicesTable({
       cell: ({ row }: { row: Row<Invoice> }) => formatCurrency(parseFloat(row.original.amount)),
     },
     {
+      id: "oem_overpayment_amount",
+      header: "OEM Overpay",
+      cell: ({ row }: { row: Row<Invoice> }) => {
+        const overpay = Number(row.original.oem_overpayment_amount || 0)
+        if (overpay <= 0) {
+          return <span className="text-sm text-muted-foreground">—</span>
+        }
+        return (
+          <span className="rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-medium text-amber-900">
+            {formatCurrency(overpay)}
+          </span>
+        )
+      },
+    },
+    {
       id: "status",
       header: "Status",
       accessorFn: (row: Invoice) => row.status,

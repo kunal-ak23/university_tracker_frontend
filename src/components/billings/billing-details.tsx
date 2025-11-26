@@ -8,6 +8,7 @@ import { BillingActions } from "@/app/(dashboard)/billings/[id]/actions"
 import { Billing } from "@/types/billing"
 import { BillingInvoicesSection } from "./invoices-section"
 import { useRouter } from "next/navigation"
+import { formatCurrency } from "@/service/utils"
 
 interface BillingDetailsProps {
   billing: Billing
@@ -50,6 +51,7 @@ function formatDate(dateString: string) {
 
 export function BillingDetails({ billing }: BillingDetailsProps) {
   const router = useRouter()
+  const oemOverpaymentAmount = Number(billing.oem_overpayment_amount || 0)
   
   return (
     <div className="space-y-6">
@@ -124,6 +126,15 @@ export function BillingDetails({ billing }: BillingDetailsProps) {
           </div>
         </div>
       </div>
+      
+      {oemOverpaymentAmount > 0 && (
+        <div className="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          You have overpaid OEMs by {formatCurrency(oemOverpaymentAmount)} across the invoices in this billing.
+          <div className="text-xs text-amber-700 mt-1">
+            Review the invoice list below to identify and reconcile the excess transfers.
+          </div>
+        </div>
+      )}
 
       {/* Batches Section */}
       <div className="rounded-lg border p-6 space-y-4">

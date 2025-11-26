@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -22,7 +22,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
-import { createInvoiceOEMPayment } from "@/service/api/invoice-oem-payments"
+import { createInvoiceOEMPayment, updateInvoiceOEMPayment } from "@/service/api/invoice-oem-payments"
 import { Loader2 } from "lucide-react"
 import { format } from "date-fns"
 import { Calendar as CalendarIcon } from "lucide-react"
@@ -39,10 +39,14 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Calendar } from "@/components/ui/calendar"
-import { cn } from "@/service/utils"
+import { cn, formatCurrency } from "@/service/utils"
+import { InvoiceOEMPayment } from "@/types/payment"
 
 const formSchema = z.object({
-  amount: z.string().min(1, "Amount is required"),
+  amount: z
+    .string()
+    .min(1, "Amount is required")
+    .refine((value) => parseFloat(value) > 0, { message: "Amount must be greater than zero" }),
   payment_method: z.enum(['cash', 'bank_transfer', 'cheque', 'upi', 'online'], {
     required_error: "Payment method is required",
   }),
@@ -61,24 +65,29 @@ interface OEMPaymentDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   invoiceId: number
-  maxAmount: number
-  onPaymentAdded: () => void
+  suggestedAmount?: number
+  overpaidAmount?: number
+  onPaymentSaved: () => void
+  payment?: InvoiceOEMPayment | null
 }
 
 export function OEMPaymentDialog({
   open,
   onOpenChange,
   invoiceId,
-  maxAmount,
-  onPaymentAdded,
+  suggestedAmount,
+  overpaidAmount,
+  onPaymentSaved,
+  payment,
 }: OEMPaymentDialogProps) {
   const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const isEditMode = Boolean(payment)
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      amount: String(maxAmount) || "",
+      amount: suggestedAmount ? String(suggestedAmount) : "",
       payment_method: "bank_transfer",
       status: "pending",
       payment_date: new Date(),
@@ -88,34 +97,62 @@ export function OEMPaymentDialog({
     },
   })
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    const amount = parseFloat(values.amount)
-    if (amount > maxAmount) {
-      form.setError("amount", {
-        type: "manual",
-        message: `Amount cannot exceed remaining OEM transfer amount ${maxAmount}`,
-      })
+  useEffect(() => {
+    if (!open) {
       return
     }
 
-    setIsSubmitting(true)
-    try {
-      await createInvoiceOEMPayment({
-        invoice: invoiceId,
-        amount: values.amount,
-        payment_method: values.payment_method,
-        status: values.status,
-        payment_date: format(values.payment_date, "yyyy-MM-dd"),
-        reference_number: values.reference_number || undefined,
-        description: values.description || undefined,
-        notes: values.notes || undefined,
+    if (payment) {
+      form.reset({
+        amount: payment.amount || "",
+        payment_method: payment.payment_method,
+        status: payment.status,
+        payment_date: payment.payment_date ? new Date(payment.payment_date) : new Date(),
+        reference_number: payment.reference_number || "",
+        description: payment.description || "",
+        notes: payment.notes || "",
       })
+    } else {
+      form.reset({
+        amount: suggestedAmount ? String(suggestedAmount) : "",
+        payment_method: "bank_transfer",
+        status: "pending",
+        payment_date: new Date(),
+        reference_number: "",
+        description: "",
+        notes: "",
+      })
+    }
+  }, [open, payment, suggestedAmount, form])
+
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+
+    setIsSubmitting(true)
+    const payload = {
+      amount: values.amount,
+      payment_method: values.payment_method,
+      status: values.status,
+      payment_date: format(values.payment_date, "yyyy-MM-dd"),
+      reference_number: values.reference_number || undefined,
+      description: values.description || undefined,
+      notes: values.notes || undefined,
+    }
+
+    try {
+      if (isEditMode && payment) {
+        await updateInvoiceOEMPayment(payment.id, payload)
+      } else {
+        await createInvoiceOEMPayment({
+          ...payload,
+          invoice: invoiceId,
+        })
+      }
       toast({
         title: "Success",
-        description: "OEM payment created successfully",
+        description: isEditMode ? "OEM payment updated successfully" : "OEM payment created successfully",
       })
       form.reset()
-      onPaymentAdded()
+      onPaymentSaved()
       onOpenChange(false)
     } catch (error) {
       console.error("Failed to create OEM payment:", error)
@@ -133,10 +170,16 @@ export function OEMPaymentDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add OEM Repayment</DialogTitle>
+          <DialogTitle>{isEditMode ? "Edit OEM Repayment" : "Add OEM Repayment"}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {overpaidAmount && overpaidAmount > 0 && !isEditMode && (
+              <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                You have already overpaid by {formatCurrency(overpaidAmount)}. Additional OEM payments will
+                increase the overpaid balance.
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -289,7 +332,7 @@ export function OEMPaymentDialog({
               </Button>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Create OEM Payment
+                {isEditMode ? "Save Changes" : "Create OEM Payment"}
               </Button>
             </div>
           </form>

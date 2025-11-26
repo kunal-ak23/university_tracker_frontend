@@ -1,19 +1,34 @@
-import { PaymentLedger, LedgerSummary, LedgerFilters, LedgerFormData } from "@/types/ledger"
+import { PaymentLedger, LedgerSummary, LedgerFilters, LedgerFormData, LedgerTransaction } from "@/types/ledger"
 import { PaginatedResponse } from "@/types/common"
 import { apiFetch } from "./fetch"
 
 export async function getLedgerEntries(filters?: LedgerFilters): Promise<PaginatedResponse<PaymentLedger>> {
   const searchParams = new URLSearchParams()
   
-  if (filters?.university) searchParams.set('university', filters.university)
+  if (filters?.university && filters.university !== 'all') searchParams.set('university', filters.university)
   if (filters?.start_date) searchParams.set('start_date', filters.start_date)
   if (filters?.end_date) searchParams.set('end_date', filters.end_date)
-  if (filters?.transaction_type) searchParams.set('transaction_type', filters.transaction_type)
+  if (filters?.account && filters.account !== 'all') searchParams.set('account', filters.account)
+  if (filters?.entry_type && filters.entry_type !== 'all') searchParams.set('entry_type', filters.entry_type)
+  if (filters?.source && filters.source !== 'all') searchParams.set('source', filters.source)
   if (filters?.search) searchParams.set('search', filters.search)
   if (filters?.page) searchParams.set('page', filters.page.toString())
   
   const queryString = searchParams.toString()
   return apiFetch(`/ledger/${queryString ? `?${queryString}` : ''}`)
+}
+
+export async function getLedgerTransactions(filters?: LedgerFilters): Promise<PaginatedResponse<LedgerTransaction>> {
+  const searchParams = new URLSearchParams()
+  
+  if (filters?.university && filters.university !== 'all') searchParams.set('university', filters.university)
+  if (filters?.start_date) searchParams.set('start_date', filters.start_date)
+  if (filters?.end_date) searchParams.set('end_date', filters.end_date)
+  if (filters?.source && filters.source !== 'all') searchParams.set('source', filters.source)
+  if (filters?.page) searchParams.set('page', filters.page.toString())
+  
+  const queryString = searchParams.toString()
+  return apiFetch(`/ledger/transactions/${queryString ? `?${queryString}` : ''}`)
 }
 
 export async function getLedgerEntry(id: string): Promise<PaymentLedger> {
